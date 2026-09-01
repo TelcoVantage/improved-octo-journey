@@ -88,12 +88,17 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
    (`formatDateISO(...)/formatDateISO(...)`, built from the built-in raw interaction start time).
 2. The custom action runs the data action with `Mode` (sender / domain), `Address` and `Interval`.
 3. The data action posts to `POST /api/v2/analytics/conversations/details/query` for inbound **email** segments in
-   that interval (newest first, 50 rows). For *sender* mode it also filters `addressFrom` server-side; the Analytics
-   API only supports exact address matches, so for *domain* mode the success template keeps rows whose sender ends
-   with `@domain`. Genesys allows only `#if` / `#set` in templates (no `#foreach`), so the template reduces every
-   conversation to one `id|start|sender` record with Java regex string methods and filters/re-renders those records.
-4. It returns `Count`, `ConversationIds[]`, `Labels[]` (`date | sender`) and a markdown `Summary`. The script binds the
-   two lists to the results dropdown (values = ids, labels = text) and shows the summary.
+   that interval (newest first, 50 rows) with an `addressFrom` predicate: the exact address in *sender* mode, or
+   `*@domain` in *domain* mode. All filtering happens in the request template, because Genesys data actions do not
+   expose `$input` in the success template and allow only `#if` / `#set` (no `#foreach`) in templates.
+4. The success template only formats: it reduces every conversation in the response to one `id|start|sender` record
+   with Java regex string methods and renders `Count`, `ConversationIds[]`, `Labels[]` (`date | sender`) and a markdown
+   `Summary`. The script binds the two lists to the results dropdown (values = ids, labels = text) and shows the summary.
+
+**Domain mode depends on the Analytics API accepting `*` in a `matches` value.** Verify once in API Explorer with
+`POST /api/v2/analytics/conversations/details/query` and a predicate `{"type":"dimension","dimension":"addressFrom",
+"operator":"matches","value":"*@yourdomain.com"}`. If the API rejects it or returns nothing for a domain you know has
+emails, domain search cannot be done through Analytics; exact-sender search is unaffected.
 
 **Testing the action in Admin > Integrations > Actions > Test**: `Mode` must be the word `sender`, `domain` or `all`
 (not an address), `Address` is the email address (sender) or the bare domain such as `rabobank.com` (domain), and

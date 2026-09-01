@@ -7,7 +7,7 @@
       "requestUrlTemplate": "/api/v2/analytics/conversations/details/query",
       "requestType": "POST",
       "headers": {},
-      "requestTemplate": "#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim()){ \"interval\": \"${input.Interval}\", \"order\": \"desc\", \"orderBy\": \"conversationStart\", \"paging\": { \"pageSize\": 50, \"pageNumber\": 1 }, \"segmentFilters\": [ { \"type\": \"and\", \"predicates\": [   { \"type\": \"dimension\", \"dimension\": \"mediaType\", \"operator\": \"matches\", \"value\": \"email\" },   { \"type\": \"dimension\", \"dimension\": \"direction\", \"operator\": \"matches\", \"value\": \"inbound\" }#if($mode == \"sender\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"$esc.jsonEncode($needle)\" }#end ] } ]}"
+      "requestTemplate": "#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim()){ \"interval\": \"${input.Interval}\", \"order\": \"desc\", \"orderBy\": \"conversationStart\", \"paging\": { \"pageSize\": 50, \"pageNumber\": 1 }, \"segmentFilters\": [ { \"type\": \"and\", \"predicates\": [   { \"type\": \"dimension\", \"dimension\": \"mediaType\", \"operator\": \"matches\", \"value\": \"email\" },   { \"type\": \"dimension\", \"dimension\": \"direction\", \"operator\": \"matches\", \"value\": \"inbound\" }#if($mode == \"sender\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"$esc.jsonEncode($needle)\" }#end#if($mode == \"domain\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"*@$esc.jsonEncode($needle)\" }#end ] } ]}"
     },
     "response": {
       "translationMap": {
@@ -16,7 +16,7 @@
       "translationMapDefaults": {
         "convs": "[]"
       },
-      "successTemplate": "#set($src = \"${convs}\")#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim())#set($dom = $needle.replace(\".\", '\\.').replace(\"+\", '\\+'))#set($rows = \"\")#if($src.contains('\"conversationId\"'))#set($rows = $src.replaceFirst('(?s)^.*?(?=\"conversationId\")', \"\"))#set($rows = $rows.replaceAll('(?s)\"conversationId\"\\s*:\\s*\"([^\"]+)\".*?\"conversationStart\"\\s*:\\s*\"([^\"]+)\".*?\"addressFrom\"\\s*:\\s*\"([^\"]+)\".*?(?=\"conversationId\"|$)', '$1|$2|$3;'))#end#if($mode == \"domain\")#set($rows = $rows.replaceAll(\"(?i)[^|;]*\\|[^|;]*\\|(?![^;]*@${dom};)[^;]*;\", \"\"))#end#if($mode == \"sender\")#set($rows = $rows.replaceAll(\"(?i)[^|;]*\\|[^|;]*\\|(?!${dom};)[^;]*;\", \"\"))#end#set($n = $rows.length() - $rows.replace(\";\", \"\").length())#set($ids = $rows.replaceAll('([^|;]*)\\|([^|;]*)\\|([^|;]*);', '\"$1\",'))#set($lbl = $rows.replaceAll('([^|;]*)\\|(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^|;]*\\|([^|;]*);', '\"$2 $3  |  $4\",'))#set($sum = $rows.replaceAll('([^|;]*)\\|(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^|;]*\\|([^|;]*);', '- $2 $3 | $4 | `$1`\\\\n'))#set($ids = $ids.replaceAll(\",$\", \"\"))#set($lbl = $lbl.replaceAll(\",$\", \"\")){ \"Count\": $n, \"ConversationIds\": [$ids], \"Labels\": [$lbl], \"Summary\": \"#if($n == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n$sum#end\" }"
+      "successTemplate": "#set($src = \"${convs}\")#set($rows = \"\")#if($src.contains('\"conversationId\"'))#set($rows = $src.replaceFirst('(?s)^.*?(?=\"conversationId\")', \"\"))#set($rows = $rows.replaceAll('(?s)\"conversationId\"\\s*:\\s*\"([^\"]+)\".*?\"conversationStart\"\\s*:\\s*\"([^\"]+)\".*?\"addressFrom\"\\s*:\\s*\"([^\"]+)\".*?(?=\"conversationId\"|$)', '$1|$2|$3;'))#end#set($n = $rows.length() - $rows.replace(\";\", \"\").length())#set($ids = $rows.replaceAll('([^|;]*)\\|([^|;]*)\\|([^|;]*);', '\"$1\",'))#set($lbl = $rows.replaceAll('([^|;]*)\\|(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^|;]*\\|([^|;]*);', '\"$2 $3  |  $4\",'))#set($sum = $rows.replaceAll('([^|;]*)\\|(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^|;]*\\|([^|;]*);', '- $2 $3 | $4 | `$1`\\\\n'))#set($ids = $ids.replaceAll(\",$\", \"\"))#set($lbl = $lbl.replaceAll(\",$\", \"\")){ \"Count\": $n, \"ConversationIds\": [$ids], \"Labels\": [$lbl], \"Summary\": \"#if($n == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n$sum#end\" }"
     }
   },
   "contract": {
@@ -28,7 +28,7 @@
         "properties": {
           "Mode": {
             "type": "string",
-            "description": "sender = exact address match, domain = everyone at the domain, all = no address filter"
+            "description": "Exactly one of: sender | domain | all"
           },
           "Address": {
             "type": "string",

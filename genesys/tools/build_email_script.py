@@ -656,32 +656,25 @@ REQUEST_TEMPLATE = (
     '#if($mode == "sender")'
     '   ,{ "type": "dimension", "dimension": "addressFrom", "operator": "matches", "value": "$esc.jsonEncode($needle)" }'
     '#end'
+    '#if($mode == "domain")'
+    '   ,{ "type": "dimension", "dimension": "addressFrom", "operator": "matches", "value": "*@$esc.jsonEncode($needle)" }'
+    '#end'
     ' ] } ]'
     '}'
 )
 
-# Velocity notes: Genesys allows only #if / #set (no #foreach) in templates, so every
-# per-row operation is done with Java String regex methods over the JSON text of the
-# conversations array. Each conversation is reduced to one record "id|start|from;" and the
-# records are then filtered and re-rendered as JSON arrays / markdown. Velocity single-quoted
-# strings are NOT interpolated, which is why the regexes are written in single quotes.
+# Velocity notes: Genesys allows only #if / #set in templates (no #foreach) and the success
+# template cannot see $input (only translation-map values), so all filtering happens in the
+# request above and this template only formats. Each conversation in the JSON text of the
+# conversations array is reduced to one "id|start|from;" record with Java regex string methods,
+# then re-rendered as JSON arrays and a markdown list. Velocity single-quoted strings are not
+# interpolated, which is why the regexes are written in single quotes.
 SUCCESS_TEMPLATE = (
     '#set($src = "${convs}")'
-    '#set($mode = "$!input.Mode")#set($mode = $mode.toLowerCase().trim())'
-    '#set($needle = "$!input.Address")#set($needle = $needle.toLowerCase().trim())'
-    '#set($dom = $needle.replace(".", \'\.\').replace("+", \'\+\'))'
-    # one record per conversation: conversationId | conversationStart | first addressFrom
     '#set($rows = "")'
     '#if($src.contains(\'"conversationId"\'))'
     '#set($rows = $src.replaceFirst(\'(?s)^.*?(?="conversationId")\', ""))'
     '#set($rows = $rows.replaceAll(\'(?s)"conversationId"\s*:\s*"([^"]+)".*?"conversationStart"\s*:\s*"([^"]+)".*?"addressFrom"\s*:\s*"([^"]+)".*?(?="conversationId"|$)\', \'$1|$2|$3;\'))'
-    '#end'
-    # drop records whose sender does not match (domain mode: ends with @domain; sender mode: exact address)
-    '#if($mode == "domain")'
-    '#set($rows = $rows.replaceAll("(?i)[^|;]*\|[^|;]*\|(?![^;]*@${dom};)[^;]*;", ""))'
-    '#end'
-    '#if($mode == "sender")'
-    '#set($rows = $rows.replaceAll("(?i)[^|;]*\|[^|;]*\|(?!${dom};)[^;]*;", ""))'
     '#end'
     '#set($n = $rows.length() - $rows.replace(";", "").length())'
     '#set($ids = $rows.replaceAll(\'([^|;]*)\|([^|;]*)\|([^|;]*);\', \'"$1",\'))'
@@ -723,7 +716,7 @@ DATA_ACTION = OrderedDict([
             ("title", "Search inbound emails - input"),
             ("type", "object"),
             ("properties", OrderedDict([
-                ("Mode", {"type": "string", "description": "sender = exact address match, domain = everyone at the domain, all = no address filter"}),
+                ("Mode", {"type": "string", "description": "Exactly one of: sender | domain | all"}),
                 ("Address", {"type": "string", "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"}),
                 ("Interval", {"type": "string", "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"}),
             ])),
