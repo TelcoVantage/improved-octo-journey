@@ -1,0 +1,84 @@
+{
+  "name": "Email Assistant - Search Inbound Emails",
+  "integrationType": "purecloud-data-actions",
+  "actionType": "custom",
+  "config": {
+    "request": {
+      "requestUrlTemplate": "/api/v2/analytics/conversations/details/query",
+      "requestType": "POST",
+      "headers": {},
+      "requestTemplate": "#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim()){ \"interval\": \"${input.Interval}\", \"order\": \"desc\", \"orderBy\": \"conversationStart\", \"paging\": { \"pageSize\": 100, \"pageNumber\": 1 }, \"segmentFilters\": [ { \"type\": \"and\", \"predicates\": [   { \"type\": \"dimension\", \"dimension\": \"mediaType\", \"operator\": \"matches\", \"value\": \"email\" },   { \"type\": \"dimension\", \"dimension\": \"direction\", \"operator\": \"matches\", \"value\": \"inbound\" }#if($mode == \"sender\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"$esc.jsonEncode($needle)\" }#end ] } ]}"
+    },
+    "response": {
+      "translationMap": {
+        "ids": "$.conversations[*].conversationId",
+        "starts": "$.conversations[*].conversationStart",
+        "froms": "$.conversations[*].participants[0].sessions[0].addressFrom"
+      },
+      "translationMapDefaults": {
+        "ids": "[]",
+        "starts": "[]",
+        "froms": "[]"
+      },
+      "successTemplate": "#set($q = '\"')#set($idsStr = \"${ids}\")#set($idsStr = $idsStr.replace(\"[\", \"\").replace(\"]\", \"\").replace($q, \"\"))#set($idsArr = $idsStr.split(\",\"))#set($startsStr = \"${starts}\")#set($startsStr = $startsStr.replace(\"[\", \"\").replace(\"]\", \"\").replace($q, \"\"))#set($startsArr = $startsStr.split(\",\"))#set($fromsStr = \"${froms}\")#set($fromsStr = $fromsStr.replace(\"[\", \"\").replace(\"]\", \"\").replace($q, \"\"))#set($fromsArr = $fromsStr.split(\",\"))#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim())#set($suffix = \"@${needle}\")#set($hits = [])#foreach($rawId in $idsArr)#set($i = $foreach.index)#set($id = $rawId.trim())#set($from = \"\")#if($i < $fromsArr.size())#set($from = $fromsArr[$i].trim().toLowerCase())#end#set($keep = false)#if($id.length() > 0)#if($mode == \"domain\")#if($from.endsWith($suffix))#set($keep = true)#end#elseif($mode == \"sender\")#if($from == $needle)#set($keep = true)#end#else#set($keep = true)#end#end#if($keep)#set($tmp = $hits.add($i))#end#end{ \"Count\": $hits.size(), \"ConversationIds\": [#foreach($i in $hits)#if($foreach.index > 0),#end\"$esc.jsonEncode($idsArr[$i].trim())\"#end], \"Labels\": [#foreach($i in $hits)#if($foreach.index > 0),#end#set($d = \"\")#if($i < $startsArr.size())#set($d = $startsArr[$i].trim().replace(\"T\", \" \"))#end#if($d.length() > 16)#set($d = $d.substring(0, 16))#end#set($f = \"\")#if($i < $fromsArr.size())#set($f = $fromsArr[$i].trim())#end\"$esc.jsonEncode(\"${d}  |  ${f}\")\"#end], \"Summary\": \"#if($hits.size() == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n#end#foreach($i in $hits)#set($d = \"\")#if($i < $startsArr.size())#set($d = $startsArr[$i].trim().replace(\"T\", \" \"))#end#if($d.length() > 16)#set($d = $d.substring(0, 16))#end#set($f = \"\")#if($i < $fromsArr.size())#set($f = $fromsArr[$i].trim())#end- $esc.jsonEncode($d) | $esc.jsonEncode($f) | `$esc.jsonEncode($idsArr[$i].trim())`\\n#end\" }"
+    }
+  },
+  "contract": {
+    "input": {
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Search inbound emails - input",
+        "type": "object",
+        "properties": {
+          "Mode": {
+            "type": "string",
+            "description": "sender = exact address match, domain = everyone at the domain, all = no address filter"
+          },
+          "Address": {
+            "type": "string",
+            "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"
+          },
+          "Interval": {
+            "type": "string",
+            "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"
+          }
+        },
+        "required": [
+          "Mode",
+          "Address",
+          "Interval"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "output": {
+      "successSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Search inbound emails - output",
+        "type": "object",
+        "properties": {
+          "Count": {
+            "type": "integer"
+          },
+          "ConversationIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Summary": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "secure": false
+}
