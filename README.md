@@ -88,11 +88,16 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
    (`formatDateISO(...)/formatDateISO(...)`, built from the built-in raw interaction start time).
 2. The custom action runs the data action with `Mode` (sender / domain), `Address` and `Interval`.
 3. The data action posts to `POST /api/v2/analytics/conversations/details/query` for inbound **email** segments in
-   that interval (newest first, 100 rows). For *sender* mode it also filters `addressFrom` server-side; the Analytics
-   API only supports exact address matches, so for *domain* mode the success template (Velocity) keeps rows whose
-   sender ends with `@domain`.
+   that interval (newest first, 50 rows). For *sender* mode it also filters `addressFrom` server-side; the Analytics
+   API only supports exact address matches, so for *domain* mode the success template keeps rows whose sender ends
+   with `@domain`. Genesys allows only `#if` / `#set` in templates (no `#foreach`), so the template reduces every
+   conversation to one `id|start|sender` record with Java regex string methods and filters/re-renders those records.
 4. It returns `Count`, `ConversationIds[]`, `Labels[]` (`date | sender`) and a markdown `Summary`. The script binds the
    two lists to the results dropdown (values = ids, labels = text) and shows the summary.
+
+**Testing the action in Admin > Integrations > Actions > Test**: `Mode` must be the word `sender`, `domain` or `all`
+(not an address), `Address` is the email address (sender) or the bare domain such as `rabobank.com` (domain), and
+`Interval` an ISO-8601 range such as `2026-08-01T00:00:00Z/2026-09-01T00:00:00Z`.
 
 ## Assumptions and limits (read before go-live)
 
@@ -100,8 +105,8 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
   Default is `apps.mypurecloud.com`; change the variable for other regions.
 - **Search window end** is the current email's arrival time + 1 hour, because scripts have no "now" function.
   Emails that arrived after that are not listed. Edit the `SearchInterval` expression if you prefer a fixed end.
-- **Domain search scans the 100 most recent inbound emails** in the window (Analytics page size). Shorten the period
-  for very busy mailboxes.
+- **Domain search scans the 50 most recent inbound emails** in the window (`pageSize` in the request template; the
+  Analytics API allows up to 100). Shorten the period for very busy mailboxes.
 - Analytics data is available a few minutes after a conversation is created; brand-new emails may not appear yet.
 - Sender address for each result is taken from the first participant's first session (`participants[0].sessions[0]`),
   which is the customer for inbound emails.
@@ -111,8 +116,8 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
   the `.script` was loaded with the **real Genesys script editor code** (the public scripter web-app bundles, run
   headless with `genesys/tools/editor-harness/validate-in-editor.js`): the script, both pages, all 24 variables and
   all 15 custom actions build without error, with every scripter feature toggle off and on. All variable/page/action
-  cross-references resolve, and both Velocity templates were executed under Velocity 1.7 for sender / domain / all /
-  empty cases and produce valid JSON. Run the Preview after import.
+  cross-references resolve, and both Velocity templates were executed under Velocity 1.7 against a mock analytics response (compact and
+  pretty-printed JSON) for sender / domain / all / no-match / empty cases and produce valid JSON without `#foreach`. Run the Preview after import.
 
 ## Validating a `.script` before importing
 

@@ -649,7 +649,7 @@ REQUEST_TEMPLATE = (
     ' "interval": "${input.Interval}",'
     ' "order": "desc",'
     ' "orderBy": "conversationStart",'
-    ' "paging": { "pageSize": 100, "pageNumber": 1 },'
+    ' "paging": { "pageSize": 50, "pageNumber": 1 },'
     ' "segmentFilters": [ { "type": "and", "predicates": ['
     '   { "type": "dimension", "dimension": "mediaType", "operator": "matches", "value": "email" },'
     '   { "type": "dimension", "dimension": "direction", "operator": "matches", "value": "inbound" }'
@@ -660,35 +660,39 @@ REQUEST_TEMPLATE = (
     '}'
 )
 
-# Velocity notes: translation-map values are rendered as JSON text, so each array is
-# turned into a Java String[] with split(",") and indexed in lock-step. One conversation
-# = one row (participants[0] is the sender of an inbound email).
+# Velocity notes: Genesys allows only #if / #set (no #foreach) in templates, so every
+# per-row operation is done with Java String regex methods over the JSON text of the
+# conversations array. Each conversation is reduced to one record "id|start|from;" and the
+# records are then filtered and re-rendered as JSON arrays / markdown. Velocity single-quoted
+# strings are NOT interpolated, which is why the regexes are written in single quotes.
 SUCCESS_TEMPLATE = (
-    '#set($q = \'"\')'
-    '#set($idsStr = "${ids}")#set($idsStr = $idsStr.replace("[", "").replace("]", "").replace($q, ""))#set($idsArr = $idsStr.split(","))'
-    '#set($startsStr = "${starts}")#set($startsStr = $startsStr.replace("[", "").replace("]", "").replace($q, ""))#set($startsArr = $startsStr.split(","))'
-    '#set($fromsStr = "${froms}")#set($fromsStr = $fromsStr.replace("[", "").replace("]", "").replace($q, ""))#set($fromsArr = $fromsStr.split(","))'
+    '#set($src = "${convs}")'
     '#set($mode = "$!input.Mode")#set($mode = $mode.toLowerCase().trim())'
     '#set($needle = "$!input.Address")#set($needle = $needle.toLowerCase().trim())'
-    '#set($suffix = "@${needle}")'
-    '#set($hits = [])'
-    '#foreach($rawId in $idsArr)'
-    '#set($i = $foreach.index)'
-    '#set($id = $rawId.trim())'
-    '#set($from = "")'
-    '#if($i < $fromsArr.size())#set($from = $fromsArr[$i].trim().toLowerCase())#end'
-    '#set($keep = false)'
-    '#if($id.length() > 0)'
-    '#if($mode == "domain")#if($from.endsWith($suffix))#set($keep = true)#end'
-    '#elseif($mode == "sender")#if($from == $needle)#set($keep = true)#end'
-    '#else#set($keep = true)#end'
+    '#set($dom = $needle.replace(".", \'\.\').replace("+", \'\+\'))'
+    # one record per conversation: conversationId | conversationStart | first addressFrom
+    '#set($rows = "")'
+    '#if($src.contains(\'"conversationId"\'))'
+    '#set($rows = $src.replaceFirst(\'(?s)^.*?(?="conversationId")\', ""))'
+    '#set($rows = $rows.replaceAll(\'(?s)"conversationId"\s*:\s*"([^"]+)".*?"conversationStart"\s*:\s*"([^"]+)".*?"addressFrom"\s*:\s*"([^"]+)".*?(?="conversationId"|$)\', \'$1|$2|$3;\'))'
     '#end'
-    '#if($keep)#set($tmp = $hits.add($i))#end'
+    # drop records whose sender does not match (domain mode: ends with @domain; sender mode: exact address)
+    '#if($mode == "domain")'
+    '#set($rows = $rows.replaceAll("(?i)[^|;]*\|[^|;]*\|(?![^;]*@${dom};)[^;]*;", ""))'
     '#end'
-    '{ "Count": $hits.size(),'
-    ' "ConversationIds": [#foreach($i in $hits)#if($foreach.index > 0),#end"$esc.jsonEncode($idsArr[$i].trim())"#end],'
-    ' "Labels": [#foreach($i in $hits)#if($foreach.index > 0),#end#set($d = "")#if($i < $startsArr.size())#set($d = $startsArr[$i].trim().replace("T", " "))#end#if($d.length() > 16)#set($d = $d.substring(0, 16))#end#set($f = "")#if($i < $fromsArr.size())#set($f = $fromsArr[$i].trim())#end"$esc.jsonEncode("${d}  |  ${f}")"#end],'
-    ' "Summary": "#if($hits.size() == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n#end#foreach($i in $hits)#set($d = "")#if($i < $startsArr.size())#set($d = $startsArr[$i].trim().replace("T", " "))#end#if($d.length() > 16)#set($d = $d.substring(0, 16))#end#set($f = "")#if($i < $fromsArr.size())#set($f = $fromsArr[$i].trim())#end- $esc.jsonEncode($d) | $esc.jsonEncode($f) | `$esc.jsonEncode($idsArr[$i].trim())`\\n#end"'
+    '#if($mode == "sender")'
+    '#set($rows = $rows.replaceAll("(?i)[^|;]*\|[^|;]*\|(?!${dom};)[^;]*;", ""))'
+    '#end'
+    '#set($n = $rows.length() - $rows.replace(";", "").length())'
+    '#set($ids = $rows.replaceAll(\'([^|;]*)\|([^|;]*)\|([^|;]*);\', \'"$1",\'))'
+    '#set($lbl = $rows.replaceAll(\'([^|;]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|;]*\|([^|;]*);\', \'"$2 $3  |  $4",\'))'
+    '#set($sum = $rows.replaceAll(\'([^|;]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|;]*\|([^|;]*);\', \'- $2 $3 | $4 | `$1`\\\\n\'))'
+    '#set($ids = $ids.replaceAll(",$", ""))'
+    '#set($lbl = $lbl.replaceAll(",$", ""))'
+    '{ "Count": $n,'
+    ' "ConversationIds": [$ids],'
+    ' "Labels": [$lbl],'
+    ' "Summary": "#if($n == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n$sum#end"'
     ' }'
 )
 
@@ -705,12 +709,10 @@ DATA_ACTION = OrderedDict([
         ])),
         ("response", OrderedDict([
             ("translationMap", OrderedDict([
-                ("ids", "$.conversations[*].conversationId"),
-                ("starts", "$.conversations[*].conversationStart"),
-                ("froms", "$.conversations[*].participants[0].sessions[0].addressFrom"),
+                ("convs", "$.conversations[*]"),
             ])),
             ("translationMapDefaults", OrderedDict([
-                ("ids", "[]"), ("starts", "[]"), ("froms", "[]"),
+                ("convs", "[]"),
             ])),
             ("successTemplate", SUCCESS_TEMPLATE),
         ])),
