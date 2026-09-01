@@ -191,7 +191,7 @@ def text_input(label, value_var, placeholder="", multiline=False, width=("stretc
     props["value"] = var_ref(value_var)
     props["changeAction"] = change or no_action()
     props["disabled"] = var_ref()
-    return {"type": "textInput", "properties": props}
+    return {"type": "input", "properties": props}
 
 
 def checkbox(label, value_var, change=None):

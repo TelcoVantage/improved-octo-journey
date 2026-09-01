@@ -13,6 +13,7 @@ genesys/
   data-actions/Email-Assistant-Search-Inbound-Emails.json        <- import this in Admin > Integrations > Actions
   tools/Deploy-EmailScript.ps1                                   <- optional one-shot deploy (PowerShell 5.1, CLM-safe)
   tools/build_email_script.py                                    <- generator that produced the two files above
+  tools/editor-harness/validate-in-editor.js                     <- loads a .script with the real Genesys editor code (headless) and reports what would fail
 ```
 
 ## What the agent sees
@@ -107,9 +108,26 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
 - The email feature exposes `Email.Customer Email Address` and `Email.Subject` only; body text is not available to
   scripts. Headers come from the *Get Email Headers* action (first email in the thread).
 - Nothing here was executed against a live org (no org access from this workspace). What **was** verified:
-  the `.script` structure matches real Genesys exports field-for-field (component property sets, action encodings,
-  feature flags), all variable/page/action cross-references resolve, and both Velocity templates were executed under
-  Velocity 1.7 for sender / domain / all / empty cases and produce valid JSON. Run the Preview after import.
+  the `.script` was loaded with the **real Genesys script editor code** (the public scripter web-app bundles, run
+  headless with `genesys/tools/editor-harness/validate-in-editor.js`): the script, both pages, all 24 variables and
+  all 15 custom actions build without error, with every scripter feature toggle off and on. All variable/page/action
+  cross-references resolve, and both Velocity templates were executed under Velocity 1.7 for sender / domain / all /
+  empty cases and produce valid JSON. Run the Preview after import.
+
+## Validating a `.script` before importing
+
+If the editor shows **"Failed to load script"** after an import, the JSON contains something the editor cannot build.
+`validate-in-editor.js` reproduces that step locally and prints the real error:
+
+```bash
+cd genesys/tools/editor-harness
+npm i playwright && npx playwright install chromium     # once
+node validate-in-editor.js ../../scripts/Email-Assistant.script        # add "on" to enable all feature toggles
+```
+
+It downloads the public editor bundles from apps.mypurecloud.com (cached in `cache/`), stubs every API call, and
+builds the script, pages, variables and custom actions exactly like *open script* does. Only GET requests for the
+public JavaScript are made; nothing is sent to your org.
 
 ## Regenerating the files
 
