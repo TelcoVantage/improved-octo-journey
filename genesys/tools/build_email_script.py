@@ -20,6 +20,7 @@ from collections import OrderedDict
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SCRIPT_OUT = os.path.join(ROOT, "genesys", "scripts", "Email-Assistant.script")
 ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-Search-Inbound-Emails.json")
+FOLLOWUP_ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-List-Follow-Ups.json")
 
 # Stable identifiers so re-running the generator produces a diff-friendly file.
 NS = uuid.UUID("6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
@@ -34,6 +35,8 @@ VERSION_ID = uid("version")
 ORG_ID = "00000000-0000-0000-0000-000000000000"        # overwritten by Genesys on import
 DATA_ACTION_PLACEHOLDER = "11111111-1111-1111-1111-111111111111"  # replace after creating the data action
 DATA_ACTION_NAME = "Email Assistant - Search Inbound Emails"
+FOLLOWUP_ACTION_PLACEHOLDER = "22222222-2222-2222-2222-222222222222"  # replace after creating the follow-ups data action
+FOLLOWUP_ACTION_NAME = "Email Assistant - List Follow-Ups"
 FONT = 'Arial, "Helvetica Neue", Helvetica, sans-serif'
 
 # --------------------------------------------------------------------------
@@ -252,13 +255,14 @@ def if_step(var_id, operator, rhs, if_block, else_block=None):
 
 
 def execute_data_action(action_id, inputs, outputs):
-    """inputs: {contractField: var_id}, outputs: {contractField: var_id}"""
+    """inputs: {contractField: var_id | ("text", literal)}, outputs: {contractField: var_id}"""
     return step("bridge.bridge", [{
         "typeName": "bridgeActionArguments",
         "value": {
             "actionName": action_id,
             "inputProperty": {"typeName": "objectFields",
-                              "value": {"fieldProperties": {k: var_ref(v) for k, v in inputs.items()}}},
+                              "value": {"fieldProperties": {k: (itext(v[1]) if isinstance(v, tuple) else var_ref(v))
+                                                            for k, v in inputs.items()}}},
             "successProperty": {"typeName": "objectFields",
                                 "value": {"fieldProperties": {k: var_ref(v) for k, v in outputs.items()}}},
             "isHedwigAction": True,
@@ -342,6 +346,15 @@ V_SEARCH_INTERVAL = var(
            'concat(formatDateISO(startMs), "/", formatDateISO(endMs))'),
     description="Analytics interval 'start/end' = DaysBack days before this email up to one hour after it arrived (computed).")
 
+# Follow-ups list (emails flagged EmailFollowUp = true, from the analytics data action)
+V_FU_COUNT = var("FollowUpCount", "number", 0, description="Number of flagged emails found.")
+V_FU_IDS = var("FollowUpConversationIds", is_list=True, description="Conversation IDs of flagged emails.")
+V_FU_LABELS = var("FollowUpLabels", is_list=True, description="'date | sender' labels of flagged emails.")
+V_FU_SUMMARY = var("FollowUpSummary", description="Markdown list of flagged emails.")
+V_FU_SELECTED = var("FollowUpSelectedId", description="Flagged email chosen in the follow-ups dropdown.")
+V_FU_STATUS = var("FollowUpStatus", description="Follow-ups page status text.")
+V_FU_LOADED = var("FollowUpsLoaded", "boolean", False, description="Shows the follow-ups list.")
+
 # Message details (MIME headers of the customer's email)
 V_HDR_FROM = var("HeaderFrom", description="MIME From header.")
 V_HDR_TO = var("HeaderTo", description="MIME To header.")
@@ -355,6 +368,7 @@ V_HEADERS_LOADED = var("HeadersLoaded", "boolean", False, description="Shows the
 # --------------------------------------------------------------------------
 PAGE_HOME = uid("page:home")
 PAGE_REPLIES = uid("page:quick-replies")
+PAGE_FOLLOWUPS = uid("page:follow-ups")
 
 # --------------------------------------------------------------------------
 # Custom actions
@@ -407,7 +421,7 @@ A_PRIORITY_CHANGED = custom_action("Priority changed", [
 ])
 
 A_FOLLOWUP_CHANGED = custom_action("Follow-up flag changed", [
-    set_string(V_STATUS, "Follow-up flag updated (participant data: EmailFollowUp = {{" + V_FOLLOWUP + "}})."),
+    set_string(V_STATUS, "Follow-up flag = {{" + V_FOLLOWUP + "}} saved to this interaction (participant data: EmailFollowUp). Flagged emails appear on the Follow-ups page."),
 ])
 
 A_RUN_SEARCH = custom_action("Run email search", search_steps())
@@ -437,6 +451,29 @@ A_LOAD_HEADERS = custom_action("Load message details (MIME headers)", [
     ]),
     set_bool(V_HEADERS_LOADED, True),
     set_string(V_STATUS, "Message details loaded."),
+])
+
+A_LOAD_FOLLOWUPS = custom_action("Load follow-ups list", [
+    set_bool(V_FU_LOADED, False),
+    set_string(V_FU_SELECTED, ""),
+    if_step(V_SEARCH_INTERVAL, "equal", "", [
+        set_string(V_FU_STATUS, "Could not compute the date window (interaction start time not available)."),
+    ], [
+        set_string(V_FU_STATUS, "Loading emails flagged for follow-up in the last {{" + V_DAYS_BACK + "}} days ..."),
+        execute_data_action(FOLLOWUP_ACTION_PLACEHOLDER,
+                            {"Interval": V_SEARCH_INTERVAL, "Attribute": ("text", "EmailFollowUp"), "Value": ("text", "true")},
+                            {"Count": V_FU_COUNT, "ConversationIds": V_FU_IDS, "Labels": V_FU_LABELS, "Summary": V_FU_SUMMARY}),
+        set_bool(V_FU_LOADED, True),
+        set_string(V_FU_STATUS, "{{" + V_FU_COUNT + "}} email(s) flagged for follow-up in the last {{" + V_DAYS_BACK + "}} days (window {{" + V_SEARCH_INTERVAL + "}})."),
+    ]),
+])
+
+A_OPEN_FOLLOWUP = custom_action("Open selected follow-up", [
+    if_step(V_FU_SELECTED, "equal", "", [
+        alert("Select an email in the follow-ups list first."),
+    ], [
+        open_url("https://{{" + V_APP_HOST + "}}/directory/#/engage/admin/interactions/{{" + V_FU_SELECTED + "}}"),
+    ]),
 ])
 
 A_CLEAR_SEARCH = custom_action("Clear search results", [
@@ -541,6 +578,7 @@ details = vstack([
     text("Message details", bold=True, size=14),
     hstack([
         button("Load message details (MIME headers)", inline(A_LOAD_HEADERS)),
+        button("\U0001F6A9 Follow-ups list", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_FOLLOWUPS}])),
         button("Quick replies →", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_REPLIES}])),
     ]),
     vstack([
@@ -579,6 +617,31 @@ replies_root = vstack([
         "Category, importance, follow-up flag and note are saved on the interaction as participant data "
         "(EmailCategory, EmailPriority, EmailFollowUp, EmailCategoryNote) so they can be reported on and used in Architect."),
     button("← Back to email", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_HOME}])),
+], height=("stretch", 100), padding=(5, 5, 5, 5))
+
+
+# --------------------------------------------------------------------------
+# Follow-ups page
+# --------------------------------------------------------------------------
+followups_root = vstack([
+    text("\U0001F6A9 Emails flagged for follow-up", bold=True, size=18),
+    text("Every email where an agent ticked 'Flag for follow-up' (participant data EmailFollowUp = true). "
+         "Select one and open it to reply, or untick the flag in that interaction's script to remove it from this list.", size=11),
+    hstack([
+        dropdown("Period", V_DAYS_BACK, options=DAYS_OPTIONS, placeholder="Last 30 days", width=("pixels", 150)),
+        button("\U0001F504 Refresh", inline(A_LOAD_FOLLOWUPS)),
+        button("← Back to email", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_HOME}])),
+    ]),
+    text("{{" + V_FU_STATUS + "}}", size=11, bold=True),
+    vstack([
+        hstack([
+            dropdown("Flagged emails ({{" + V_FU_COUNT + "}})", V_FU_SELECTED,
+                     list_pair=(V_FU_IDS, V_FU_LABELS), placeholder="Select an email to open ...",
+                     width=("pixels", 420)),
+            button("Open selected interaction", inline(A_OPEN_FOLLOWUP)),
+        ]),
+        markdown("{{" + V_FU_SUMMARY + "}}"),
+    ], visible_var=V_FU_LOADED, padding=(8, 8, 8, 8), border_width=1, border_color="c9c9c9", margin=(8, 0, 0, 0)),
 ], height=("stretch", 100), padding=(5, 5, 5, 5))
 
 
@@ -630,6 +693,7 @@ SCRIPT = OrderedDict([
     ("pages", [
         page(PAGE_HOME, "Email", home_root, on_load=A_ON_LOAD),
         page(PAGE_REPLIES, "Quick replies", replies_root),
+        page(PAGE_FOLLOWUPS, "Follow-ups", followups_root, on_load=A_LOAD_FOLLOWUPS),
     ]),
     ("features", FEATURES),
     ("variables", VARS),
@@ -663,6 +727,23 @@ REQUEST_TEMPLATE = (
     '}'
 )
 
+FOLLOWUP_REQUEST_TEMPLATE = (
+    '#set($attr = "$!input.Attribute")#set($attr = $attr.trim())'
+    '#if($attr == "")#set($attr = "EmailFollowUp")#end'
+    '#set($val = "$!input.Value")#set($val = $val.trim())'
+    '#if($val == "")#set($val = "true")#end'
+    '{'
+    ' "interval": "${input.Interval}",'
+    ' "order": "desc",'
+    ' "orderBy": "conversationStart",'
+    ' "paging": { "pageSize": 50, "pageNumber": 1 },'
+    ' "segmentFilters": [ { "type": "and", "predicates": ['
+    '   { "type": "dimension", "dimension": "mediaType", "operator": "matches", "value": "email" },'
+    '   { "type": "property", "propertyType": "string", "property": "$esc.jsonEncode($attr)", "value": "$esc.jsonEncode($val)" }'
+    ' ] } ]'
+    '}'
+)
+
 # Velocity notes: Genesys allows only #if / #set in templates (no #foreach) and the success
 # template cannot see $input (only translation-map values), so all filtering happens in the
 # request above and this template only formats. Each conversation in the JSON text of the
@@ -689,55 +770,64 @@ SUCCESS_TEMPLATE = (
     ' }'
 )
 
-DATA_ACTION = OrderedDict([
-    ("name", DATA_ACTION_NAME),
-    ("integrationType", "purecloud-data-actions"),
-    ("actionType", "custom"),
-    ("config", OrderedDict([
-        ("request", OrderedDict([
-            ("requestUrlTemplate", "/api/v2/analytics/conversations/details/query"),
-            ("requestType", "POST"),
-            ("headers", {}),
-            ("requestTemplate", REQUEST_TEMPLATE),
-        ])),
-        ("response", OrderedDict([
-            ("translationMap", OrderedDict([
-                ("convs", "$.conversations[*]"),
-            ])),
-            ("translationMapDefaults", OrderedDict([
-                ("convs", "[]"),
-            ])),
-            ("successTemplate", SUCCESS_TEMPLATE),
-        ])),
+OUTPUT_SCHEMA = OrderedDict([
+    ("$schema", "http://json-schema.org/draft-04/schema#"),
+    ("title", "Email list - output"),
+    ("type", "object"),
+    ("properties", OrderedDict([
+        ("Count", {"type": "integer"}),
+        ("ConversationIds", {"type": "array", "items": {"type": "string"}}),
+        ("Labels", {"type": "array", "items": {"type": "string"}}),
+        ("Summary", {"type": "string"}),
     ])),
-    ("contract", OrderedDict([
-        ("input", {"inputSchema": OrderedDict([
-            ("$schema", "http://json-schema.org/draft-04/schema#"),
-            ("title", "Search inbound emails - input"),
-            ("type", "object"),
-            ("properties", OrderedDict([
-                ("Mode", {"type": "string", "description": "Exactly one of: sender | domain | all"}),
-                ("Address", {"type": "string", "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"}),
-                ("Interval", {"type": "string", "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"}),
-            ])),
-            ("required", ["Mode", "Address", "Interval"]),
-            ("additionalProperties", True),
-        ])}),
-        ("output", {"successSchema": OrderedDict([
-            ("$schema", "http://json-schema.org/draft-04/schema#"),
-            ("title", "Search inbound emails - output"),
-            ("type", "object"),
-            ("properties", OrderedDict([
-                ("Count", {"type": "integer"}),
-                ("ConversationIds", {"type": "array", "items": {"type": "string"}}),
-                ("Labels", {"type": "array", "items": {"type": "string"}}),
-                ("Summary", {"type": "string"}),
-            ])),
-            ("additionalProperties", True),
-        ])}),
-    ])),
-    ("secure", False),
+    ("additionalProperties", True),
 ])
+
+
+def data_action(name, request_template, input_props, required):
+    return OrderedDict([
+        ("name", name),
+        ("integrationType", "purecloud-data-actions"),
+        ("actionType", "custom"),
+        ("config", OrderedDict([
+            ("request", OrderedDict([
+                ("requestUrlTemplate", "/api/v2/analytics/conversations/details/query"),
+                ("requestType", "POST"),
+                ("headers", {}),
+                ("requestTemplate", request_template),
+            ])),
+            ("response", OrderedDict([
+                ("translationMap", OrderedDict([("convs", "$.conversations[*]")])),
+                ("translationMapDefaults", OrderedDict([("convs", "[]")])),
+                ("successTemplate", SUCCESS_TEMPLATE),
+            ])),
+        ])),
+        ("contract", OrderedDict([
+            ("input", {"inputSchema": OrderedDict([
+                ("$schema", "http://json-schema.org/draft-04/schema#"),
+                ("title", name + " - input"),
+                ("type", "object"),
+                ("properties", input_props),
+                ("required", required),
+                ("additionalProperties", True),
+            ])}),
+            ("output", {"successSchema": OUTPUT_SCHEMA}),
+        ])),
+        ("secure", False),
+    ])
+
+
+DATA_ACTION = data_action(DATA_ACTION_NAME, REQUEST_TEMPLATE, OrderedDict([
+    ("Mode", {"type": "string", "description": "Exactly one of: sender | domain | all"}),
+    ("Address", {"type": "string", "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"}),
+    ("Interval", {"type": "string", "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"}),
+]), ["Mode", "Address", "Interval"])
+
+FOLLOWUP_ACTION = data_action(FOLLOWUP_ACTION_NAME, FOLLOWUP_REQUEST_TEMPLATE, OrderedDict([
+    ("Interval", {"type": "string", "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"}),
+    ("Attribute", {"type": "string", "description": "Participant data key to match (default EmailFollowUp)"}),
+    ("Value", {"type": "string", "description": "Value the attribute must equal (default true)"}),
+]), ["Interval"])
 
 
 def main():
@@ -749,8 +839,13 @@ def main():
     with open(ACTION_OUT, "w", encoding="utf-8") as f:
         json.dump(DATA_ACTION, f, indent=2, ensure_ascii=False)
         f.write("\n")
+    with open(FOLLOWUP_ACTION_OUT, "w", encoding="utf-8") as f:
+        json.dump(FOLLOWUP_ACTION, f, indent=2, ensure_ascii=False)
+        f.write("\n")
     print("wrote", os.path.relpath(SCRIPT_OUT, ROOT))
     print("wrote", os.path.relpath(ACTION_OUT, ROOT))
+    print("wrote", os.path.relpath(FOLLOWUP_ACTION_OUT, ROOT))
+    print("follow-ups data action placeholder id:", FOLLOWUP_ACTION_PLACEHOLDER)
     print("data action placeholder id:", DATA_ACTION_PLACEHOLDER)
 
 

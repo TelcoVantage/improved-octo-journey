@@ -1,5 +1,5 @@
 {
-  "name": "Email Assistant - Search Inbound Emails",
+  "name": "Email Assistant - List Follow-Ups",
   "integrationType": "purecloud-data-actions",
   "actionType": "custom",
   "config": {
@@ -7,7 +7,7 @@
       "requestUrlTemplate": "/api/v2/analytics/conversations/details/query",
       "requestType": "POST",
       "headers": {},
-      "requestTemplate": "#set($mode = \"$!input.Mode\")#set($mode = $mode.toLowerCase().trim())#set($needle = \"$!input.Address\")#set($needle = $needle.toLowerCase().trim()){ \"interval\": \"${input.Interval}\", \"order\": \"desc\", \"orderBy\": \"conversationStart\", \"paging\": { \"pageSize\": 50, \"pageNumber\": 1 }, \"segmentFilters\": [ { \"type\": \"and\", \"predicates\": [   { \"type\": \"dimension\", \"dimension\": \"mediaType\", \"operator\": \"matches\", \"value\": \"email\" },   { \"type\": \"dimension\", \"dimension\": \"direction\", \"operator\": \"matches\", \"value\": \"inbound\" }#if($mode == \"sender\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"$esc.jsonEncode($needle)\" }#end#if($mode == \"domain\")   ,{ \"type\": \"dimension\", \"dimension\": \"addressFrom\", \"operator\": \"matches\", \"value\": \"*@$esc.jsonEncode($needle)\" }#end ] } ]}"
+      "requestTemplate": "#set($attr = \"$!input.Attribute\")#set($attr = $attr.trim())#if($attr == \"\")#set($attr = \"EmailFollowUp\")#end#set($val = \"$!input.Value\")#set($val = $val.trim())#if($val == \"\")#set($val = \"true\")#end{ \"interval\": \"${input.Interval}\", \"order\": \"desc\", \"orderBy\": \"conversationStart\", \"paging\": { \"pageSize\": 50, \"pageNumber\": 1 }, \"segmentFilters\": [ { \"type\": \"and\", \"predicates\": [   { \"type\": \"dimension\", \"dimension\": \"mediaType\", \"operator\": \"matches\", \"value\": \"email\" },   { \"type\": \"property\", \"propertyType\": \"string\", \"property\": \"$esc.jsonEncode($attr)\", \"value\": \"$esc.jsonEncode($val)\" } ] } ]}"
     },
     "response": {
       "translationMap": {
@@ -23,25 +23,23 @@
     "input": {
       "inputSchema": {
         "$schema": "http://json-schema.org/draft-04/schema#",
-        "title": "Email Assistant - Search Inbound Emails - input",
+        "title": "Email Assistant - List Follow-Ups - input",
         "type": "object",
         "properties": {
-          "Mode": {
-            "type": "string",
-            "description": "Exactly one of: sender | domain | all"
-          },
-          "Address": {
-            "type": "string",
-            "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"
-          },
           "Interval": {
             "type": "string",
             "description": "ISO-8601 interval start/end, e.g. 2026-08-01T00:00:00Z/2026-09-01T00:00:00Z"
+          },
+          "Attribute": {
+            "type": "string",
+            "description": "Participant data key to match (default EmailFollowUp)"
+          },
+          "Value": {
+            "type": "string",
+            "description": "Value the attribute must equal (default true)"
           }
         },
         "required": [
-          "Mode",
-          "Address",
           "Interval"
         ],
         "additionalProperties": true

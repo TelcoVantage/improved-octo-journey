@@ -5,8 +5,8 @@
 .DESCRIPTION
   1. Gets an OAuth token (client credentials).
   2. Finds the "Genesys Cloud Data Actions" integration.
-  3. Creates the data action from genesys/data-actions/*.json (or reuses it if the name exists).
-  4. Writes the data action id (and your region's app host) into the .script file.
+  3. Creates both data actions from genesys/data-actions/*.json (or reuses them if the names exist).
+  4. Writes the data action ids (and your region's app host) into the .script file.
   5. Uploads the .script through the same endpoint the Scripts UI uses (uploads/v2/scripter),
      waits for the import to finish, then publishes the script.
 
@@ -28,6 +28,7 @@ param(
     [string] $Region          = "mypurecloud.com",
     [string] $ScriptFile      = (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\Email-Assistant.script"),
     [string] $DataActionFile  = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-Search-Inbound-Emails.json"),
+    [string] $FollowUpActionFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-List-Follow-Ups.json"),
     [string] $IntegrationName = "Genesys Cloud Data Actions",
     [string] $ScriptName      = "Email Assistant",
     [string] $DivisionId      = "",
@@ -36,7 +37,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Placeholder     = "11111111-1111-1111-1111-111111111111"
+$Placeholder     = "11111111-1111-1111-1111-111111111111"   # search data action id in the .script
+$FollowUpPlaceholder = "22222222-2222-2222-2222-222222222222"  # follow-ups data action id in the .script
 $DefaultAppHost  = "apps.mypurecloud.com"
 if ($AppHost -eq "") { $AppHost = "apps." + $Region }
 
@@ -151,34 +153,37 @@ Write-Host ("      integration id " + $integrationId)
 # ---------------------------------------------------------------------------
 # 3. Data action (create or reuse)
 # ---------------------------------------------------------------------------
-Write-Host "[3/5] Creating data action from $DataActionFile ..."
-if (-not (Test-Path $DataActionFile)) { throw "Data action file not found: $DataActionFile" }
-$actionDef = Get-Content -Path $DataActionFile -Raw -Encoding UTF8 | ConvertFrom-Json
-if (-not $actionDef -or -not $actionDef.name) { throw "Data action file is not valid JSON or has no name." }
-
-$existing = $null
-$list = Invoke-GcApi -Method Get -Path ("/api/v2/integrations/actions?pageSize=100&integrationId=" + $integrationId)
-if ($list -and $list.entities) {
-    foreach ($a in $list.entities) { if ($a.name -eq $actionDef.name) { $existing = $a; break } }
-}
-if ($null -ne $existing) {
-    $dataActionId = $existing.id
-    Write-Host ("      reusing existing data action " + $dataActionId)
-}
-else {
-    $createBody = @{
-        name          = $actionDef.name
-        category      = "Email Assistant"
-        integrationId = $integrationId
-        secure        = $false
-        contract      = $actionDef.contract
-        config        = $actionDef.config
+function Ensure-DataAction {
+    param([string] $File, [string] $IntegrationId)
+    if (-not (Test-Path $File)) { throw "Data action file not found: $File" }
+    $def = Get-Content -Path $File -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (-not $def -or -not $def.name) { throw "Data action file is not valid JSON or has no name: $File" }
+    $found = $null
+    $list = Invoke-GcApi -Method Get -Path ("/api/v2/integrations/actions?pageSize=100&integrationId=" + $IntegrationId)
+    if ($list -and $list.entities) {
+        foreach ($a in $list.entities) { if ($a.name -eq $def.name) { $found = $a; break } }
     }
-    $created = Invoke-GcApi -Method Post -Path "/api/v2/integrations/actions" -Body $createBody
-    if (-not $created -or -not $created.id) { throw "Data action creation returned no id." }
-    $dataActionId = $created.id
-    Write-Host ("      created data action " + $dataActionId)
+    if ($null -ne $found) {
+        Write-Host ("      reusing existing data action '" + $def.name + "' " + $found.id)
+        return "" + $found.id
+    }
+    $body = @{
+        name          = $def.name
+        category      = "Email Assistant"
+        integrationId = $IntegrationId
+        secure        = $false
+        contract      = $def.contract
+        config        = $def.config
+    }
+    $created = Invoke-GcApi -Method Post -Path "/api/v2/integrations/actions" -Body $body
+    if (-not $created -or -not $created.id) { throw ("Data action creation returned no id for " + $def.name) }
+    Write-Host ("      created data action '" + $def.name + "' " + $created.id)
+    return "" + $created.id
 }
+
+Write-Host "[3/5] Creating data actions ..."
+$dataActionId     = Ensure-DataAction -File $DataActionFile -IntegrationId $integrationId
+$followUpActionId = Ensure-DataAction -File $FollowUpActionFile -IntegrationId $integrationId
 
 # ---------------------------------------------------------------------------
 # 4. Patch and upload the script
@@ -188,6 +193,8 @@ if (-not (Test-Path $ScriptFile)) { throw "Script file not found: $ScriptFile" }
 $scriptText = Get-Content -Path $ScriptFile -Raw -Encoding UTF8
 if ($scriptText.IndexOf($Placeholder) -lt 0) { Write-Warning "Placeholder data action id not found in script; it may already be patched." }
 $scriptText = $scriptText.Replace($Placeholder, $dataActionId)
+if ($scriptText.IndexOf($FollowUpPlaceholder) -lt 0) { Write-Warning "Follow-ups placeholder id not found in script; it may already be patched." }
+$scriptText = $scriptText.Replace($FollowUpPlaceholder, $followUpActionId)
 $scriptText = $scriptText.Replace('"value": "' + $DefaultAppHost + '"', '"value": "' + $AppHost + '"')
 
 $boundary = "----GenesysScriptUpload" + (Get-Random -Minimum 100000 -Maximum 999999)
@@ -267,7 +274,8 @@ else {
 
 Write-Host ""
 Write-Host "Done."
-Write-Host ("  Data action : " + $dataActionId + "  (" + $actionDef.name + ")")
+Write-Host ("  Search data action     : " + $dataActionId)
+Write-Host ("  Follow-ups data action : " + $followUpActionId)
 Write-Host ("  Script      : " + $scriptId + "  (" + $ScriptName + ")")
 Write-Host ("  Open editor : " + $AppsBase + "/scripter/#/scripts/" + $scriptId)
 Write-Host "  Next: open the script, click Preview, run 'All emails from this sender', then assign the script to your email queue/flow."

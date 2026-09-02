@@ -2935,6 +2935,92 @@
                       },
                       "text": {
                         "typeName": "interpolatedText",
+                        "value": "\ud83d\udea9 Follow-ups list"
+                      },
+                      "clickAction": {
+                        "typeName": "action",
+                        "value": {
+                          "actionName": "scripter.changePage",
+                          "actionArgumentValues": [
+                            {
+                              "typeName": "page",
+                              "value": "127e72f6-820c-53ed-a467-4eb9671565c8"
+                            }
+                          ]
+                        }
+                      },
+                      "backgroundColor": {
+                        "typeName": "null"
+                      },
+                      "textColor": {
+                        "typeName": "null"
+                      },
+                      "bold": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "italic": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "underline": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "font": {
+                        "typeName": "font",
+                        "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+                      },
+                      "fontSize": {
+                        "typeName": "integer",
+                        "value": 11
+                      },
+                      "justification": {
+                        "typeName": "text",
+                        "value": "center"
+                      },
+                      "disabled": {
+                        "typeName": "variable"
+                      }
+                    }
+                  },
+                  {
+                    "type": "button",
+                    "properties": {
+                      "margin": {
+                        "typeName": "spacing",
+                        "value": [
+                          5,
+                          5,
+                          5,
+                          5
+                        ]
+                      },
+                      "alignment": {
+                        "typeName": "alignment",
+                        "value": "start"
+                      },
+                      "width": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "auto"
+                        }
+                      },
+                      "height": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "auto"
+                        }
+                      },
+                      "visible": {
+                        "typeName": "variable"
+                      },
+                      "preserveLayoutLocation": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "text": {
+                        "typeName": "interpolatedText",
                         "value": "Quick replies \u2192"
                       },
                       "clickAction": {
@@ -4320,6 +4406,1055 @@
           }
         ]
       }
+    },
+    {
+      "id": "127e72f6-820c-53ed-a467-4eb9671565c8",
+      "name": "Follow-ups",
+      "organizationId": "00000000-0000-0000-0000-000000000000",
+      "scriptId": "00952353-d713-5559-8990-efe4ee7722dc",
+      "versionId": "cca21e75-cea0-5229-89f8-fd576da88116",
+      "properties": {
+        "onLoadAction": {
+          "typeName": "action",
+          "value": {
+            "actionName": "84581eb9-e11c-5ec1-bd2b-6a4567c1d718"
+          }
+        },
+        "backgroundColor": {
+          "typeName": "null"
+        }
+      },
+      "dataVersion": 0,
+      "rootContainer": {
+        "type": "verticalStackContainer",
+        "properties": {
+          "margin": {
+            "typeName": "spacing",
+            "value": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "alignment": {
+            "typeName": "alignment",
+            "value": "start"
+          },
+          "width": {
+            "typeName": "sizing",
+            "value": {
+              "sizeType": "stretch",
+              "size": 100
+            }
+          },
+          "height": {
+            "typeName": "sizing",
+            "value": {
+              "sizeType": "stretch",
+              "size": 100
+            }
+          },
+          "visible": {
+            "typeName": "variable"
+          },
+          "preserveLayoutLocation": {
+            "typeName": "boolean",
+            "value": false
+          },
+          "backgroundColor": {
+            "typeName": "null"
+          },
+          "padding": {
+            "typeName": "spacing",
+            "value": [
+              5,
+              5,
+              5,
+              5
+            ]
+          },
+          "childArrangement": {
+            "typeName": "childArrangement",
+            "value": "start"
+          },
+          "border": {
+            "typeName": "border",
+            "value": [
+              {
+                "width": 0,
+                "style": "solid",
+                "color": "000000"
+              },
+              {
+                "width": 0,
+                "style": "solid",
+                "color": "000000"
+              },
+              {
+                "width": 0,
+                "style": "solid",
+                "color": "000000"
+              },
+              {
+                "width": 0,
+                "style": "solid",
+                "color": "000000"
+              }
+            ]
+          }
+        },
+        "children": [
+          {
+            "type": "text",
+            "properties": {
+              "margin": {
+                "typeName": "spacing",
+                "value": [
+                  2,
+                  5,
+                  2,
+                  5
+                ]
+              },
+              "alignment": {
+                "typeName": "alignment",
+                "value": "start"
+              },
+              "width": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "stretch",
+                  "size": 100
+                }
+              },
+              "height": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "visible": {
+                "typeName": "variable"
+              },
+              "preserveLayoutLocation": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "text": {
+                "typeName": "interpolatedText",
+                "value": "\ud83d\udea9 Emails flagged for follow-up"
+              },
+              "bold": {
+                "typeName": "boolean",
+                "value": true
+              },
+              "italic": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "underline": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "font": {
+                "typeName": "font",
+                "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+              },
+              "fontSize": {
+                "typeName": "integer",
+                "value": 18
+              },
+              "justification": {
+                "typeName": "text",
+                "value": "left"
+              },
+              "backgroundColor": {
+                "typeName": "null"
+              },
+              "textColor": {
+                "typeName": "null"
+              },
+              "padding": {
+                "typeName": "spacing",
+                "value": 0
+              }
+            }
+          },
+          {
+            "type": "text",
+            "properties": {
+              "margin": {
+                "typeName": "spacing",
+                "value": [
+                  2,
+                  5,
+                  2,
+                  5
+                ]
+              },
+              "alignment": {
+                "typeName": "alignment",
+                "value": "start"
+              },
+              "width": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "stretch",
+                  "size": 100
+                }
+              },
+              "height": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "visible": {
+                "typeName": "variable"
+              },
+              "preserveLayoutLocation": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "text": {
+                "typeName": "interpolatedText",
+                "value": "Every email where an agent ticked 'Flag for follow-up' (participant data EmailFollowUp = true). Select one and open it to reply, or untick the flag in that interaction's script to remove it from this list."
+              },
+              "bold": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "italic": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "underline": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "font": {
+                "typeName": "font",
+                "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+              },
+              "fontSize": {
+                "typeName": "integer",
+                "value": 11
+              },
+              "justification": {
+                "typeName": "text",
+                "value": "left"
+              },
+              "backgroundColor": {
+                "typeName": "null"
+              },
+              "textColor": {
+                "typeName": "null"
+              },
+              "padding": {
+                "typeName": "spacing",
+                "value": 0
+              }
+            }
+          },
+          {
+            "type": "horizontalStackContainer",
+            "properties": {
+              "margin": {
+                "typeName": "spacing",
+                "value": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "alignment": {
+                "typeName": "alignment",
+                "value": "start"
+              },
+              "width": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "height": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "visible": {
+                "typeName": "variable"
+              },
+              "preserveLayoutLocation": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "backgroundColor": {
+                "typeName": "null"
+              },
+              "padding": {
+                "typeName": "spacing",
+                "value": [
+                  5,
+                  5,
+                  5,
+                  5
+                ]
+              },
+              "childArrangement": {
+                "typeName": "childArrangement",
+                "value": "start"
+              },
+              "border": {
+                "typeName": "border",
+                "value": [
+                  {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "000000"
+                  },
+                  {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "000000"
+                  },
+                  {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "000000"
+                  },
+                  {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "000000"
+                  }
+                ]
+              }
+            },
+            "children": [
+              {
+                "type": "dropdown",
+                "properties": {
+                  "margin": {
+                    "typeName": "spacing",
+                    "value": [
+                      5,
+                      5,
+                      5,
+                      5
+                    ]
+                  },
+                  "alignment": {
+                    "typeName": "alignment",
+                    "value": "start"
+                  },
+                  "width": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "pixels",
+                      "size": 150
+                    }
+                  },
+                  "height": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "visible": {
+                    "typeName": "variable"
+                  },
+                  "preserveLayoutLocation": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "label": {
+                    "typeName": "interpolatedText",
+                    "value": "Period"
+                  },
+                  "labelPosition": {
+                    "typeName": "labelPosition",
+                    "value": "above"
+                  },
+                  "placeholderText": {
+                    "typeName": "interpolatedText",
+                    "value": "Last 30 days"
+                  },
+                  "options": {
+                    "typeName": "list",
+                    "value": [
+                      [
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "7"
+                        },
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "Last 7 days"
+                        }
+                      ],
+                      [
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "30"
+                        },
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "Last 30 days"
+                        }
+                      ],
+                      [
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "90"
+                        },
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "Last 90 days"
+                        }
+                      ],
+                      [
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "180"
+                        },
+                        {
+                          "typeName": "interpolatedText",
+                          "value": "Last 180 days"
+                        }
+                      ]
+                    ]
+                  },
+                  "doesRequireValue": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "value": {
+                    "typeName": "variable",
+                    "value": "81b1b88d-c028-5181-b45a-cf182913c09b"
+                  },
+                  "changeAction": {
+                    "typeName": "action",
+                    "value": {}
+                  },
+                  "disabled": {
+                    "typeName": "variable"
+                  }
+                }
+              },
+              {
+                "type": "button",
+                "properties": {
+                  "margin": {
+                    "typeName": "spacing",
+                    "value": [
+                      5,
+                      5,
+                      5,
+                      5
+                    ]
+                  },
+                  "alignment": {
+                    "typeName": "alignment",
+                    "value": "start"
+                  },
+                  "width": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "height": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "visible": {
+                    "typeName": "variable"
+                  },
+                  "preserveLayoutLocation": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "text": {
+                    "typeName": "interpolatedText",
+                    "value": "\ud83d\udd04 Refresh"
+                  },
+                  "clickAction": {
+                    "typeName": "action",
+                    "value": {
+                      "actionName": "84581eb9-e11c-5ec1-bd2b-6a4567c1d718"
+                    }
+                  },
+                  "backgroundColor": {
+                    "typeName": "null"
+                  },
+                  "textColor": {
+                    "typeName": "null"
+                  },
+                  "bold": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "italic": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "underline": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "font": {
+                    "typeName": "font",
+                    "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+                  },
+                  "fontSize": {
+                    "typeName": "integer",
+                    "value": 11
+                  },
+                  "justification": {
+                    "typeName": "text",
+                    "value": "center"
+                  },
+                  "disabled": {
+                    "typeName": "variable"
+                  }
+                }
+              },
+              {
+                "type": "button",
+                "properties": {
+                  "margin": {
+                    "typeName": "spacing",
+                    "value": [
+                      5,
+                      5,
+                      5,
+                      5
+                    ]
+                  },
+                  "alignment": {
+                    "typeName": "alignment",
+                    "value": "start"
+                  },
+                  "width": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "height": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "visible": {
+                    "typeName": "variable"
+                  },
+                  "preserveLayoutLocation": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "text": {
+                    "typeName": "interpolatedText",
+                    "value": "\u2190 Back to email"
+                  },
+                  "clickAction": {
+                    "typeName": "action",
+                    "value": {
+                      "actionName": "scripter.changePage",
+                      "actionArgumentValues": [
+                        {
+                          "typeName": "page",
+                          "value": "70be729b-e55b-5a2f-b209-de8d4a3c6172"
+                        }
+                      ]
+                    }
+                  },
+                  "backgroundColor": {
+                    "typeName": "null"
+                  },
+                  "textColor": {
+                    "typeName": "null"
+                  },
+                  "bold": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "italic": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "underline": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "font": {
+                    "typeName": "font",
+                    "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+                  },
+                  "fontSize": {
+                    "typeName": "integer",
+                    "value": 11
+                  },
+                  "justification": {
+                    "typeName": "text",
+                    "value": "center"
+                  },
+                  "disabled": {
+                    "typeName": "variable"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "properties": {
+              "margin": {
+                "typeName": "spacing",
+                "value": [
+                  2,
+                  5,
+                  2,
+                  5
+                ]
+              },
+              "alignment": {
+                "typeName": "alignment",
+                "value": "start"
+              },
+              "width": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "stretch",
+                  "size": 100
+                }
+              },
+              "height": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "visible": {
+                "typeName": "variable"
+              },
+              "preserveLayoutLocation": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "text": {
+                "typeName": "interpolatedText",
+                "value": "{{cbbb60ba-b2ee-5e2e-a666-1f0174e3a985}}"
+              },
+              "bold": {
+                "typeName": "boolean",
+                "value": true
+              },
+              "italic": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "underline": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "font": {
+                "typeName": "font",
+                "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+              },
+              "fontSize": {
+                "typeName": "integer",
+                "value": 11
+              },
+              "justification": {
+                "typeName": "text",
+                "value": "left"
+              },
+              "backgroundColor": {
+                "typeName": "null"
+              },
+              "textColor": {
+                "typeName": "null"
+              },
+              "padding": {
+                "typeName": "spacing",
+                "value": 0
+              }
+            }
+          },
+          {
+            "type": "verticalStackContainer",
+            "properties": {
+              "margin": {
+                "typeName": "spacing",
+                "value": [
+                  8,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "alignment": {
+                "typeName": "alignment",
+                "value": "start"
+              },
+              "width": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "stretch",
+                  "size": 100
+                }
+              },
+              "height": {
+                "typeName": "sizing",
+                "value": {
+                  "sizeType": "auto"
+                }
+              },
+              "visible": {
+                "typeName": "variable",
+                "value": "658eff1b-7158-5605-a46f-41ab8bfb5f6a"
+              },
+              "preserveLayoutLocation": {
+                "typeName": "boolean",
+                "value": false
+              },
+              "backgroundColor": {
+                "typeName": "null"
+              },
+              "padding": {
+                "typeName": "spacing",
+                "value": [
+                  8,
+                  8,
+                  8,
+                  8
+                ]
+              },
+              "childArrangement": {
+                "typeName": "childArrangement",
+                "value": "start"
+              },
+              "border": {
+                "typeName": "border",
+                "value": [
+                  {
+                    "width": 1,
+                    "style": "solid",
+                    "color": "c9c9c9"
+                  },
+                  {
+                    "width": 1,
+                    "style": "solid",
+                    "color": "c9c9c9"
+                  },
+                  {
+                    "width": 1,
+                    "style": "solid",
+                    "color": "c9c9c9"
+                  },
+                  {
+                    "width": 1,
+                    "style": "solid",
+                    "color": "c9c9c9"
+                  }
+                ]
+              }
+            },
+            "children": [
+              {
+                "type": "horizontalStackContainer",
+                "properties": {
+                  "margin": {
+                    "typeName": "spacing",
+                    "value": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  },
+                  "alignment": {
+                    "typeName": "alignment",
+                    "value": "start"
+                  },
+                  "width": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "height": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "visible": {
+                    "typeName": "variable"
+                  },
+                  "preserveLayoutLocation": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "backgroundColor": {
+                    "typeName": "null"
+                  },
+                  "padding": {
+                    "typeName": "spacing",
+                    "value": [
+                      5,
+                      5,
+                      5,
+                      5
+                    ]
+                  },
+                  "childArrangement": {
+                    "typeName": "childArrangement",
+                    "value": "start"
+                  },
+                  "border": {
+                    "typeName": "border",
+                    "value": [
+                      {
+                        "width": 0,
+                        "style": "solid",
+                        "color": "000000"
+                      },
+                      {
+                        "width": 0,
+                        "style": "solid",
+                        "color": "000000"
+                      },
+                      {
+                        "width": 0,
+                        "style": "solid",
+                        "color": "000000"
+                      },
+                      {
+                        "width": 0,
+                        "style": "solid",
+                        "color": "000000"
+                      }
+                    ]
+                  }
+                },
+                "children": [
+                  {
+                    "type": "dropdown",
+                    "properties": {
+                      "margin": {
+                        "typeName": "spacing",
+                        "value": [
+                          5,
+                          5,
+                          5,
+                          5
+                        ]
+                      },
+                      "alignment": {
+                        "typeName": "alignment",
+                        "value": "start"
+                      },
+                      "width": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "pixels",
+                          "size": 420
+                        }
+                      },
+                      "height": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "auto"
+                        }
+                      },
+                      "visible": {
+                        "typeName": "variable"
+                      },
+                      "preserveLayoutLocation": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "label": {
+                        "typeName": "interpolatedText",
+                        "value": "Flagged emails ({{87b42094-f972-5cef-bdcb-1a2f4c94cfa4}})"
+                      },
+                      "labelPosition": {
+                        "typeName": "labelPosition",
+                        "value": "above"
+                      },
+                      "placeholderText": {
+                        "typeName": "interpolatedText",
+                        "value": "Select an email to open ..."
+                      },
+                      "options": {
+                        "typeName": "listPair",
+                        "value": {
+                          "valuesList": "e056ba63-4b6a-5d03-bacb-b19641664117",
+                          "labelsList": "21834a18-5ad9-51f2-a318-a6eda4910828"
+                        }
+                      },
+                      "doesRequireValue": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "value": {
+                        "typeName": "variable",
+                        "value": "510bb8f6-0393-5ea6-99c3-bc9bfed5357b"
+                      },
+                      "changeAction": {
+                        "typeName": "action",
+                        "value": {}
+                      },
+                      "disabled": {
+                        "typeName": "variable"
+                      }
+                    }
+                  },
+                  {
+                    "type": "button",
+                    "properties": {
+                      "margin": {
+                        "typeName": "spacing",
+                        "value": [
+                          5,
+                          5,
+                          5,
+                          5
+                        ]
+                      },
+                      "alignment": {
+                        "typeName": "alignment",
+                        "value": "start"
+                      },
+                      "width": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "auto"
+                        }
+                      },
+                      "height": {
+                        "typeName": "sizing",
+                        "value": {
+                          "sizeType": "auto"
+                        }
+                      },
+                      "visible": {
+                        "typeName": "variable"
+                      },
+                      "preserveLayoutLocation": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "text": {
+                        "typeName": "interpolatedText",
+                        "value": "Open selected interaction"
+                      },
+                      "clickAction": {
+                        "typeName": "action",
+                        "value": {
+                          "actionName": "517e66da-4a65-5112-aacd-57f26ea0262b"
+                        }
+                      },
+                      "backgroundColor": {
+                        "typeName": "null"
+                      },
+                      "textColor": {
+                        "typeName": "null"
+                      },
+                      "bold": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "italic": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "underline": {
+                        "typeName": "boolean",
+                        "value": false
+                      },
+                      "font": {
+                        "typeName": "font",
+                        "value": "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+                      },
+                      "fontSize": {
+                        "typeName": "integer",
+                        "value": 11
+                      },
+                      "justification": {
+                        "typeName": "text",
+                        "value": "center"
+                      },
+                      "disabled": {
+                        "typeName": "variable"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "markdown",
+                "properties": {
+                  "margin": {
+                    "typeName": "spacing",
+                    "value": [
+                      2,
+                      5,
+                      2,
+                      5
+                    ]
+                  },
+                  "alignment": {
+                    "typeName": "alignment",
+                    "value": "start"
+                  },
+                  "width": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "stretch",
+                      "size": 100
+                    }
+                  },
+                  "height": {
+                    "typeName": "sizing",
+                    "value": {
+                      "sizeType": "auto"
+                    }
+                  },
+                  "visible": {
+                    "typeName": "variable"
+                  },
+                  "preserveLayoutLocation": {
+                    "typeName": "boolean",
+                    "value": false
+                  },
+                  "text": {
+                    "typeName": "interpolatedText",
+                    "value": "{{12b38497-4024-5781-af73-832c8c967d39}}"
+                  },
+                  "fontSize": {
+                    "typeName": "integer",
+                    "value": 12
+                  },
+                  "ariaLive": {
+                    "typeName": "boolean",
+                    "value": false
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "features": {
@@ -4664,6 +5799,97 @@
       "output": false
     },
     {
+      "id": "87b42094-f972-5cef-bdcb-1a2f4c94cfa4",
+      "name": "FollowUpCount",
+      "description": "Number of flagged emails found.",
+      "type": {
+        "isDynamic": false,
+        "isList": false,
+        "name": "number"
+      },
+      "value": 0,
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "e056ba63-4b6a-5d03-bacb-b19641664117",
+      "name": "FollowUpConversationIds",
+      "description": "Conversation IDs of flagged emails.",
+      "type": {
+        "isDynamic": false,
+        "isList": true,
+        "name": "string"
+      },
+      "value": [],
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "21834a18-5ad9-51f2-a318-a6eda4910828",
+      "name": "FollowUpLabels",
+      "description": "'date | sender' labels of flagged emails.",
+      "type": {
+        "isDynamic": false,
+        "isList": true,
+        "name": "string"
+      },
+      "value": [],
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "12b38497-4024-5781-af73-832c8c967d39",
+      "name": "FollowUpSummary",
+      "description": "Markdown list of flagged emails.",
+      "type": {
+        "isDynamic": false,
+        "isList": false,
+        "name": "string"
+      },
+      "value": "",
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "510bb8f6-0393-5ea6-99c3-bc9bfed5357b",
+      "name": "FollowUpSelectedId",
+      "description": "Flagged email chosen in the follow-ups dropdown.",
+      "type": {
+        "isDynamic": false,
+        "isList": false,
+        "name": "string"
+      },
+      "value": "",
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "cbbb60ba-b2ee-5e2e-a666-1f0174e3a985",
+      "name": "FollowUpStatus",
+      "description": "Follow-ups page status text.",
+      "type": {
+        "isDynamic": false,
+        "isList": false,
+        "name": "string"
+      },
+      "value": "",
+      "input": false,
+      "output": false
+    },
+    {
+      "id": "658eff1b-7158-5605-a46f-41ab8bfb5f6a",
+      "name": "FollowUpsLoaded",
+      "description": "Shows the follow-ups list.",
+      "type": {
+        "isDynamic": false,
+        "isList": false,
+        "name": "boolean"
+      },
+      "value": false,
+      "input": false,
+      "output": false
+    },
+    {
       "id": "fc612ea4-1395-5500-ae77-400ed07c19a6",
       "name": "HeaderFrom",
       "description": "MIME From header.",
@@ -4886,7 +6112,7 @@
                   "variableTypeName": "string",
                   "valueOfVariableProperty": {
                     "typeName": "interpolatedText",
-                    "value": "Follow-up flag updated (participant data: EmailFollowUp = {{476edb43-7f22-5099-8de9-88ef2c1db189}})."
+                    "value": "Follow-up flag = {{476edb43-7f22-5099-8de9-88ef2c1db189}} saved to this interaction (participant data: EmailFollowUp). Flagged emails appear on the Follow-ups page."
                   }
                 }
               }
@@ -5868,6 +7094,255 @@
                     "value": "Message details loaded."
                   }
                 }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "84581eb9-e11c-5ec1-bd2b-6a4567c1d718",
+      "name": "Load follow-ups list",
+      "action": {
+        "block": [
+          {
+            "type": "action",
+            "actionName": "scripter.setVariable",
+            "actionArgumentValues": [
+              {
+                "typeName": "variableWithValue",
+                "value": {
+                  "variable": {
+                    "typeName": "variable",
+                    "value": "658eff1b-7158-5605-a46f-41ab8bfb5f6a"
+                  },
+                  "variableTypeName": "boolean",
+                  "valueOfVariableProperty": {
+                    "typeName": "boolean",
+                    "value": false
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "action",
+            "actionName": "scripter.setVariable",
+            "actionArgumentValues": [
+              {
+                "typeName": "variableWithValue",
+                "value": {
+                  "variable": {
+                    "typeName": "variable",
+                    "value": "510bb8f6-0393-5ea6-99c3-bc9bfed5357b"
+                  },
+                  "variableTypeName": "string",
+                  "valueOfVariableProperty": {
+                    "typeName": "interpolatedText",
+                    "value": ""
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "if",
+            "condition": {
+              "type": "standard",
+              "leftHandSide": {
+                "typeName": "variable",
+                "value": "5e12a582-db39-5c27-a8ab-a80eaf5445b4"
+              },
+              "operator": "equal",
+              "rightHandSide": {
+                "typeName": "interpolatedText",
+                "value": ""
+              }
+            },
+            "ifBlock": [
+              {
+                "type": "action",
+                "actionName": "scripter.setVariable",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "variableWithValue",
+                    "value": {
+                      "variable": {
+                        "typeName": "variable",
+                        "value": "cbbb60ba-b2ee-5e2e-a666-1f0174e3a985"
+                      },
+                      "variableTypeName": "string",
+                      "valueOfVariableProperty": {
+                        "typeName": "interpolatedText",
+                        "value": "Could not compute the date window (interaction start time not available)."
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "elseBlock": [
+              {
+                "type": "action",
+                "actionName": "scripter.setVariable",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "variableWithValue",
+                    "value": {
+                      "variable": {
+                        "typeName": "variable",
+                        "value": "cbbb60ba-b2ee-5e2e-a666-1f0174e3a985"
+                      },
+                      "variableTypeName": "string",
+                      "valueOfVariableProperty": {
+                        "typeName": "interpolatedText",
+                        "value": "Loading emails flagged for follow-up in the last {{81b1b88d-c028-5181-b45a-cf182913c09b}} days ..."
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "action",
+                "actionName": "bridge.bridge",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "bridgeActionArguments",
+                    "value": {
+                      "actionName": "22222222-2222-2222-2222-222222222222",
+                      "inputProperty": {
+                        "typeName": "objectFields",
+                        "value": {
+                          "fieldProperties": {
+                            "Interval": {
+                              "typeName": "variable",
+                              "value": "5e12a582-db39-5c27-a8ab-a80eaf5445b4"
+                            },
+                            "Attribute": {
+                              "typeName": "interpolatedText",
+                              "value": "EmailFollowUp"
+                            },
+                            "Value": {
+                              "typeName": "interpolatedText",
+                              "value": "true"
+                            }
+                          }
+                        }
+                      },
+                      "successProperty": {
+                        "typeName": "objectFields",
+                        "value": {
+                          "fieldProperties": {
+                            "Count": {
+                              "typeName": "variable",
+                              "value": "87b42094-f972-5cef-bdcb-1a2f4c94cfa4"
+                            },
+                            "ConversationIds": {
+                              "typeName": "variable",
+                              "value": "e056ba63-4b6a-5d03-bacb-b19641664117"
+                            },
+                            "Labels": {
+                              "typeName": "variable",
+                              "value": "21834a18-5ad9-51f2-a318-a6eda4910828"
+                            },
+                            "Summary": {
+                              "typeName": "variable",
+                              "value": "12b38497-4024-5781-af73-832c8c967d39"
+                            }
+                          }
+                        }
+                      },
+                      "isHedwigAction": true
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "action",
+                "actionName": "scripter.setVariable",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "variableWithValue",
+                    "value": {
+                      "variable": {
+                        "typeName": "variable",
+                        "value": "658eff1b-7158-5605-a46f-41ab8bfb5f6a"
+                      },
+                      "variableTypeName": "boolean",
+                      "valueOfVariableProperty": {
+                        "typeName": "boolean",
+                        "value": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "action",
+                "actionName": "scripter.setVariable",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "variableWithValue",
+                    "value": {
+                      "variable": {
+                        "typeName": "variable",
+                        "value": "cbbb60ba-b2ee-5e2e-a666-1f0174e3a985"
+                      },
+                      "variableTypeName": "string",
+                      "valueOfVariableProperty": {
+                        "typeName": "interpolatedText",
+                        "value": "{{87b42094-f972-5cef-bdcb-1a2f4c94cfa4}} email(s) flagged for follow-up in the last {{81b1b88d-c028-5181-b45a-cf182913c09b}} days (window {{5e12a582-db39-5c27-a8ab-a80eaf5445b4}})."
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "517e66da-4a65-5112-aacd-57f26ea0262b",
+      "name": "Open selected follow-up",
+      "action": {
+        "block": [
+          {
+            "type": "if",
+            "condition": {
+              "type": "standard",
+              "leftHandSide": {
+                "typeName": "variable",
+                "value": "510bb8f6-0393-5ea6-99c3-bc9bfed5357b"
+              },
+              "operator": "equal",
+              "rightHandSide": {
+                "typeName": "interpolatedText",
+                "value": ""
+              }
+            },
+            "ifBlock": [
+              {
+                "type": "action",
+                "actionName": "scripter.alert",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "interpolatedText",
+                    "value": "Select an email in the follow-ups list first."
+                  }
+                ]
+              }
+            ],
+            "elseBlock": [
+              {
+                "type": "action",
+                "actionName": "scripter.webPage",
+                "actionArgumentValues": [
+                  {
+                    "typeName": "interpolatedText",
+                    "value": "https://{{1800ed2b-4fb8-5403-a923-b388f82dd7f9}}/directory/#/engage/admin/interactions/{{510bb8f6-0393-5ea6-99c3-bc9bfed5357b}}"
+                  }
+                ]
               }
             ]
           }

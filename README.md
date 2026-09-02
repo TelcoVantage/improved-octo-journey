@@ -2,15 +2,17 @@
 
 An agent script for **email interactions** in Genesys Cloud that gives agents Outlook-style tools inside the
 Genesys UI: a colour-coded **category dropdown**, importance and follow-up flags, a triage note, **search for all
-emails from this sender or from the whole domain**, message details (MIME headers) and one-click quick replies.
+emails from this sender or from the whole domain**, a **follow-ups list** every agent can open, message details
+(MIME headers) and one-click quick replies.
 
-Everything is native Genesys: a `.script` file you import in *Admin > Scripts*, plus one Genesys Cloud
-**data action** that performs the search through the Platform API.
+Everything is native Genesys: a `.script` file you import in *Admin > Scripts*, plus two Genesys Cloud
+**data actions** that query the Platform API (one for the search, one for the follow-ups list).
 
 ```
 genesys/
   scripts/Email-Assistant.script                                 <- import this in Admin > Scripts
-  data-actions/Email-Assistant-Search-Inbound-Emails.json        <- import this in Admin > Integrations > Actions
+  data-actions/Email-Assistant-Search-Inbound-Emails.json        <- import both in Admin > Integrations > Actions
+  data-actions/Email-Assistant-List-Follow-Ups.json
   tools/Deploy-EmailScript.ps1                                   <- optional one-shot deploy (PowerShell 5.1, CLM-safe)
   tools/build_email_script.py                                    <- generator that produced the two files above
   tools/editor-harness/validate-in-editor.js                     <- loads a .script with the real Genesys editor code (headless) and reports what would fail
@@ -29,6 +31,13 @@ genesys/
 
 **Page 2 – Quick replies**: four templates (acknowledge, need more information, resolved, transferred) that are
 copied to the clipboard with the agent's name filled in, and a category guide table.
+
+**Page 3 – Follow-ups** (button *Follow-ups list* on page 1): every email in the chosen period where an agent ticked
+*Flag for follow-up*, newest first, as a dropdown plus a markdown list with sender and interaction id, and an *Open
+selected interaction* button. It loads automatically when the page opens and has a *Refresh* button. Standard agents
+can use it: the list is produced by a data action that runs under the Data Actions integration's own OAuth client, so
+agents need only *Integrations > Action > Execute*, not any reporting or analytics permission. Unticking the flag on
+an email (in that email's script) removes it from the list on the next refresh.
 
 ### Where the category goes
 
@@ -51,11 +60,13 @@ No data action is needed for categorisation; only the search uses one.
 
 ## Install – option A: through the Genesys Cloud UI
 
-1. **Data action**: *Admin > Integrations > Actions > Import*, pick the Genesys Cloud Data Actions integration and
-   upload `genesys/data-actions/Email-Assistant-Search-Inbound-Emails.json`. Save & publish. Copy the action's
-   **ID** from the URL or the action page.
-2. **Point the script at the action**: open `genesys/scripts/Email-Assistant.script` in a text editor and replace the
-   three occurrences of `11111111-1111-1111-1111-111111111111` with that ID. If your org is not on
+1. **Data actions**: *Admin > Integrations > Actions > Import*, pick the Genesys Cloud Data Actions integration and
+   upload `genesys/data-actions/Email-Assistant-Search-Inbound-Emails.json`, then repeat for
+   `genesys/data-actions/Email-Assistant-List-Follow-Ups.json`. Save & publish each. Copy each action's **ID** from
+   the URL or the action page.
+2. **Point the script at the actions**: open `genesys/scripts/Email-Assistant.script` in a text editor and replace the
+   three occurrences of `11111111-1111-1111-1111-111111111111` with the search action ID and the one occurrence of
+   `22222222-2222-2222-2222-222222222222` with the follow-ups action ID. If your org is not on
    `apps.mypurecloud.com`, also replace that value (variable `GenesysAppHost`) with your region's host, for example
    `apps.mypurecloud.ie`, `apps.mypurecloud.com.au`, `apps.euw2.pure.cloud`, `apps.usw2.pure.cloud`.
 3. **Import the script**: *Admin > Contact Center > Scripts > Import*, choose a division, select the `.script` file.
@@ -64,8 +75,8 @@ No data action is needed for categorisation; only the search uses one.
    (or set it on the queue), or let agents open it from the **Scripts** panel in Agent Workspace.
 
 If step 2 is skipped the script still imports; the custom actions *Run email search*, *Search – all emails from this
-sender* and *Search – all emails from this domain* will simply show an unselected data action that you can pick in
-the editor.
+sender*, *Search – all emails from this domain* and *Load follow-ups list* will simply show an unselected data action
+that you can pick in the editor.
 
 ## Install – option B: PowerShell (Constrained Language Mode safe)
 
@@ -100,6 +111,23 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
 "operator":"matches","value":"*@yourdomain.com"}`. If the API rejects it or returns nothing for a domain you know has
 emails, domain search cannot be done through Analytics; exact-sender search is unaffected.
 
+## How the follow-ups list works
+
+The *Follow-ups* page runs the second data action with the same date window as the search (`SearchInterval`, so
+"last N days" up to one hour after the current email arrived) and the participant data key/value to match
+(`EmailFollowUp` = `true` by default; the action accepts other keys, for example `EmailCategory` = `complaint`).
+The request is the same analytics detail query with a **property predicate** on the participant attribute:
+
+```json
+{ "type": "property", "propertyType": "string", "property": "EmailFollowUp", "value": "true" }
+```
+
+The flag is written to the conversation by the script's output variable, so it only exists on emails handled with
+this script, and Analytics needs a few minutes before a newly flagged email shows up. Participant data is retained by
+Genesys for 60 days. This predicate has not been run against a live org from this workspace; if the action test
+returns a count of zero for an email you know is flagged, try `"propertyType": "bool", "value": true` in the request
+template and tell me the result.
+
 **Testing the action in Admin > Integrations > Actions > Test**: `Mode` must be the word `sender`, `domain` or `all`
 (not an address), `Address` is the email address (sender) or the bare domain such as `rabobank.com` (domain), and
 `Interval` an ISO-8601 range such as `2026-08-01T00:00:00Z/2026-09-01T00:00:00Z`.
@@ -119,8 +147,8 @@ emails, domain search cannot be done through Analytics; exact-sender search is u
   scripts. Headers come from the *Get Email Headers* action (first email in the thread).
 - Nothing here was executed against a live org (no org access from this workspace). What **was** verified:
   the `.script` was loaded with the **real Genesys script editor code** (the public scripter web-app bundles, run
-  headless with `genesys/tools/editor-harness/validate-in-editor.js`): the script, both pages, all 24 variables and
-  all 15 custom actions build without error, with every scripter feature toggle off and on. All variable/page/action
+  headless with `genesys/tools/editor-harness/validate-in-editor.js`): the script, all three pages, all 31 variables
+  and all 17 custom actions build without error, with every scripter feature toggle off and on. All variable/page/action
   cross-references resolve, and both Velocity templates were executed under Velocity 1.7 against a mock analytics response (compact and
   pretty-printed JSON) for sender / domain / all / no-match / empty cases and produce valid JSON without `#foreach`. Run the Preview after import.
 
