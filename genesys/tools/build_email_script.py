@@ -755,18 +755,21 @@ SUCCESS_TEMPLATE = (
     '#set($rows = "")'
     '#if($src.contains(\'"conversationId"\'))'
     '#set($rows = $src.replaceFirst(\'(?s)^.*?(?="conversationId")\', ""))'
-    '#set($rows = $rows.replaceAll(\'(?s)"conversationId"\s*:\s*"([^"]+)".*?"conversationStart"\s*:\s*"([^"]+)".*?"addressFrom"\s*:\s*"([^"]+)".*?(?="conversationId"|$)\', \'$1|$2|$3;\'))'
+    # one record per conversation: id|start|sender|subject<<>>  (sender and subject are looked up anywhere
+    # inside the conversation's own text, so key order and missing values do not break alignment)
+    '#set($rows = $rows.replaceAll(\'(?s)"conversationId"\s*:\s*"([^"]+)"(?:(?!"conversationId").)*?"conversationStart"\s*:\s*"([^"]+)"(?:(?=(?:(?!"conversationId").)*?"addressFrom"\s*:\s*"([^"]*)")|)(?:(?=(?:(?!"conversationId").)*?"subject"\s*:\s*"((?:[^"\\\\]|\\\\.)*)")|)(?:(?!"conversationId").)*\', \'$1|$2|$3|$4<<>>\'))'
     '#end'
-    '#set($n = $rows.length() - $rows.replace(";", "").length())'
-    '#set($ids = $rows.replaceAll(\'([^|;]*)\|([^|;]*)\|([^|;]*);\', \'"$1",\'))'
-    '#set($lbl = $rows.replaceAll(\'([^|;]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|;]*\|([^|;]*);\', \'"$2 $3  |  $4",\'))'
-    '#set($sum = $rows.replaceAll(\'([^|;]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|;]*\|([^|;]*);\', \'- $2 $3 | $4 | `$1`\\\\n\'))'
+    '#set($n = $rows.length() - $rows.replace("<<>>", "").length())'
+    '#set($n = $n / 4)'
+    '#set($ids = $rows.replaceAll(\'([^|]*)\|([^|]*)\|([^|]*)\|(?:(?!<<>>).)*<<>>\', \'"$1",\'))'
+    '#set($lbl = $rows.replaceAll(\'([^|]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|]*\|([^|]*)\|((?:(?!<<>>).)*)<<>>\', \'"$2 $3  |  $4  |  $5",\'))'
+    '#set($sum = $rows.replaceAll(\'([^|]*)\|(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})[^|]*\|([^|]*)\|((?:(?!<<>>).)*)<<>>\', \'- $2 $3 | $4 | $5 | `$1`\\\\n\'))'
     '#set($ids = $ids.replaceAll(",$", ""))'
     '#set($lbl = $lbl.replaceAll(",$", ""))'
     '{ "Count": $n,'
     ' "ConversationIds": [$ids],'
     ' "Labels": [$lbl],'
-    ' "Summary": "#if($n == 0)No inbound emails matched.#else**Most recent first** (date | sender | interaction id)\\n\\n$sum#end"'
+    ' "Summary": "#if($n == 0)No inbound emails matched.#else**Most recent first** (date | sender | subject | interaction id)\\n\\n$sum#end"'
     ' }'
 )
 
@@ -777,7 +780,7 @@ OUTPUT_SCHEMA = OrderedDict([
     ("properties", OrderedDict([
         ("Count", {"type": "integer"}),
         ("ConversationIds", {"type": "array", "items": {"type": "string"}}),
-        ("Labels", {"type": "array", "items": {"type": "string"}}),
+        ("Labels", {"type": "array", "items": {"type": "string"}, "description": "date | sender | subject"}),
         ("Summary", {"type": "string"}),
     ])),
     ("additionalProperties", True),

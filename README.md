@@ -26,14 +26,14 @@ genesys/
 |---|---|
 | Header | Sender address, subject, queue, agent, interaction id, status line |
 | **Categorise** | Dropdown with Outlook-like categories (🔴 Complaint, 🟠 Billing / payment, 🟡 Technical support, 🟢 Sales enquiry, 🔵 Account / profile change, 🟣 General question, ⚫ Spam / junk, ⚪ Other), an **Importance** dropdown (Low / Normal / High), a **Flag for follow-up** checkbox and a **triage note** |
-| **Search emails** | Buttons *All emails from this sender* and *All emails from this domain (example.com)*, plus a free search box with *Match* (exact sender / whole domain) and *Period* (7 / 30 / 90 / 180 days). Results appear as a **Matching emails** dropdown (date \| sender) and a markdown list with interaction ids. *Open selected interaction* opens the chosen email in a new tab. |
+| **Search emails** | Buttons *All emails from this sender* and *All emails from this domain (example.com)*, plus a free search box with *Match* (exact sender / whole domain) and *Period* (7 / 30 / 90 / 180 days). Results appear as a **Matching emails** dropdown (date \| sender \| subject) and a markdown list with subject and interaction id. *Open selected interaction* opens the chosen email in a new tab. |
 | **Message details** | *Load message details* reads the MIME headers From, To, Reply-To, Date, Message-ID of the customer's email |
 
 **Page 2 – Quick replies**: four templates (acknowledge, need more information, resolved, transferred) that are
 copied to the clipboard with the agent's name filled in, and a category guide table.
 
 **Page 3 – Follow-ups** (button *Follow-ups list* on page 1): every email in the chosen period where an agent ticked
-*Flag for follow-up*, newest first, as a dropdown plus a markdown list with sender and interaction id, and an *Open
+*Flag for follow-up*, newest first, as a dropdown plus a markdown list with sender, subject and interaction id, and an *Open
 selected interaction* button. It loads automatically when the page opens and has a *Refresh* button. Standard agents
 can use it: the list is produced by a data action that runs under the Data Actions integration's own OAuth client, so
 agents need only *Integrations > Action > Execute*, not any reporting or analytics permission. Unticking the flag on
@@ -102,8 +102,9 @@ It uses cmdlets, hashtables and arrays only; Base64 for the Basic auth header is
    that interval (newest first, 50 rows) with an `addressFrom` predicate: the exact address in *sender* mode, or
    `*@domain` in *domain* mode. All filtering happens in the request template, because Genesys data actions do not
    expose `$input` in the success template and allow only `#if` / `#set` (no `#foreach`) in templates.
-4. The success template only formats: it reduces every conversation in the response to one `id|start|sender` record
-   with Java regex string methods and renders `Count`, `ConversationIds[]`, `Labels[]` (`date | sender`) and a markdown
+4. The success template only formats: it reduces every conversation in the response to one `id|start|sender|subject`
+   record with Java regex string methods (the subject comes from the analytics segment's `subject`, which is the initial
+   email's subject) and renders `Count`, `ConversationIds[]`, `Labels[]` (`date | sender | subject`) and a markdown
    `Summary`. The script binds the two lists to the results dropdown (values = ids, labels = text) and shows the summary.
 
 **Domain mode depends on the Analytics API accepting `*` in a `matches` value.** Verify once in API Explorer with
