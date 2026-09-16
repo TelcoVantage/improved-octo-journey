@@ -5,7 +5,7 @@
 .DESCRIPTION
   1. Gets an OAuth token (client credentials).
   2. Finds the "Genesys Cloud Data Actions" integration.
-  3. Creates both data actions from genesys/data-actions/*.json (or reuses them if the names exist).
+  3. Creates the four data actions from genesys/data-actions/*.json (or reuses them if the names exist).
   4. Writes the data action ids (and your region's app host) into the .script file.
   5. Uploads the .script through the same endpoint the Scripts UI uses (uploads/v2/scripter),
      waits for the import to finish, then publishes the script.
@@ -19,7 +19,9 @@
 .NOTES
   OAuth client needs (at least): integrations:integration:view, integrations:action:add,
   integrations:action:view, scripter:script:add, scripter:script:view,
-  scripter:publishedScript:add, scripter:publishedScript:view, analytics:conversationDetail:view.
+  scripter:publishedScript:add, scripter:publishedScript:view.
+  The Data Actions integration's own OAuth client needs analytics:conversationDetail:view (search,
+  follow-ups) and conversation:communication:view (email thread / message).
   Script uploads require a user-level (not group-inherited) grant of those scripter permissions.
 #>
 param(
@@ -29,6 +31,8 @@ param(
     [string] $ScriptFile      = (Join-Path (Split-Path -Parent $PSScriptRoot) "scripts\Email-Assistant.script"),
     [string] $DataActionFile  = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-Search-Inbound-Emails.json"),
     [string] $FollowUpActionFile = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-List-Follow-Ups.json"),
+    [string] $ThreadActionFile   = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-Get-Email-Thread.json"),
+    [string] $MessageActionFile  = (Join-Path (Split-Path -Parent $PSScriptRoot) "data-actions\Email-Assistant-Get-Email-Message.json"),
     [string] $IntegrationName = "Genesys Cloud Data Actions",
     [string] $ScriptName      = "Email Assistant",
     [string] $DivisionId      = "",
@@ -39,6 +43,8 @@ param(
 $ErrorActionPreference = "Stop"
 $Placeholder     = "11111111-1111-1111-1111-111111111111"   # search data action id in the .script
 $FollowUpPlaceholder = "22222222-2222-2222-2222-222222222222"  # follow-ups data action id in the .script
+$ThreadPlaceholder   = "33333333-3333-3333-3333-333333333333"  # email thread data action id in the .script
+$MessagePlaceholder  = "44444444-4444-4444-4444-444444444444"  # email message data action id in the .script
 $DefaultAppHost  = "apps.mypurecloud.com"
 if ($AppHost -eq "") { $AppHost = "apps." + $Region }
 
@@ -184,6 +190,8 @@ function Ensure-DataAction {
 Write-Host "[3/5] Creating data actions ..."
 $dataActionId     = Ensure-DataAction -File $DataActionFile -IntegrationId $integrationId
 $followUpActionId = Ensure-DataAction -File $FollowUpActionFile -IntegrationId $integrationId
+$threadActionId   = Ensure-DataAction -File $ThreadActionFile -IntegrationId $integrationId
+$messageActionId  = Ensure-DataAction -File $MessageActionFile -IntegrationId $integrationId
 
 # ---------------------------------------------------------------------------
 # 4. Patch and upload the script
@@ -195,6 +203,8 @@ if ($scriptText.IndexOf($Placeholder) -lt 0) { Write-Warning "Placeholder data a
 $scriptText = $scriptText.Replace($Placeholder, $dataActionId)
 if ($scriptText.IndexOf($FollowUpPlaceholder) -lt 0) { Write-Warning "Follow-ups placeholder id not found in script; it may already be patched." }
 $scriptText = $scriptText.Replace($FollowUpPlaceholder, $followUpActionId)
+$scriptText = $scriptText.Replace($ThreadPlaceholder, $threadActionId)
+$scriptText = $scriptText.Replace($MessagePlaceholder, $messageActionId)
 $scriptText = $scriptText.Replace('"value": "' + $DefaultAppHost + '"', '"value": "' + $AppHost + '"')
 
 $boundary = "----GenesysScriptUpload" + (Get-Random -Minimum 100000 -Maximum 999999)
@@ -276,6 +286,8 @@ Write-Host ""
 Write-Host "Done."
 Write-Host ("  Search data action     : " + $dataActionId)
 Write-Host ("  Follow-ups data action : " + $followUpActionId)
+Write-Host ("  Thread data action     : " + $threadActionId)
+Write-Host ("  Message data action    : " + $messageActionId)
 Write-Host ("  Script      : " + $scriptId + "  (" + $ScriptName + ")")
 Write-Host ("  Open editor : " + $AppsBase + "/scripter/#/scripts/" + $scriptId)
 Write-Host "  Next: open the script, click Preview, run 'All emails from this sender', then assign the script to your email queue/flow."

@@ -1,0 +1,72 @@
+{
+  "name": "Email Assistant - Get Email Thread",
+  "integrationType": "purecloud-data-actions",
+  "actionType": "custom",
+  "config": {
+    "request": {
+      "requestUrlTemplate": "/api/v2/conversations/emails/${input.ConversationId}/messages",
+      "requestType": "GET",
+      "headers": {},
+      "requestTemplate": ""
+    },
+    "response": {
+      "translationMap": {
+        "msgs": "$.entities[*]['id','time','from','subject','textBodyPreview']"
+      },
+      "translationMapDefaults": {
+        "msgs": "[]"
+      },
+      "successTemplate": "#set($src = \"${msgs}\")#set($rows = \"\")#if($src.contains('\"id\"'))#set($rows = $src.replaceFirst('(?s)^.*?(?=\"id\")', \"\"))#set($rows = $rows.replaceAll('(?s)\"id\"\\s*:\\s*\"([^\"]+)\"(?:(?=(?:(?!\"id\").)*?\"time\"\\s*:\\s*\"([^\"]*)\")|)(?:(?=(?:(?!\"id\").)*?\"from\"\\s*:\\s*\\{[^}]*?\"email\"\\s*:\\s*\"([^\"]*)\")|)(?:(?=(?:(?!\"id\").)*?\"subject\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\")|)(?:(?=(?:(?!\"id\").)*?\"textBodyPreview\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\")|)(?:(?!\"id\").)*', '$1~|~$2~|~$3~|~$4~|~$5<<>>'))#end#set($n = $rows.length() - $rows.replace(\"<<>>\", \"\").length())#set($n = $n / 4)#set($ids = $rows.replaceAll('((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)<<>>', '\"$1\",'))#set($lbl = $rows.replaceAll('((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)<<>>', '\"$2  |  $3  |  $4\",'))#set($md = $rows.replaceAll('((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)~\\|~((?:(?!~\\|~)(?!<<>>).)*)<<>>', '#### $2 - $3\\\\n**$4**\\\\n\\\\n$5\\\\n\\\\n---\\\\n'))#set($lbl = $lbl.replaceAll('(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^ \"]*', '$1 $2'))#set($md = $md.replaceAll('(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^ \"]*', '$1 $2'))#set($md = $md.replace(\"\\r\", \"\").replace(\"\\n\", \"  \\n\").replace(\"  \\n  \\n\", \"\\n\\n\").replace(\"****\", \"_(no subject)_\"))#set($ids = $ids.replaceAll(\",$\", \"\"))#set($lbl = $lbl.replaceAll(\",$\", \"\")){ \"Count\": $n, \"MessageIds\": [$ids], \"Labels\": [$lbl], \"Thread\": \"#if($n == 0)No messages found for this conversation.#else$md#end\" }"
+    }
+  },
+  "contract": {
+    "input": {
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Email Assistant - Get Email Thread - input",
+        "type": "object",
+        "properties": {
+          "ConversationId": {
+            "type": "string",
+            "description": "Email conversation (interaction) id"
+          }
+        },
+        "required": [
+          "ConversationId"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "output": {
+      "successSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Email Assistant - Get Email Thread - output",
+        "type": "object",
+        "properties": {
+          "Count": {
+            "type": "integer"
+          },
+          "MessageIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "Labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "time | from | subject"
+          },
+          "Thread": {
+            "type": "string",
+            "description": "Markdown: one section per message with its text preview"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "secure": false
+}

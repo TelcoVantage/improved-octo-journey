@@ -1,0 +1,76 @@
+{
+  "name": "Email Assistant - Get Email Message",
+  "integrationType": "purecloud-data-actions",
+  "actionType": "custom",
+  "config": {
+    "request": {
+      "requestUrlTemplate": "/api/v2/conversations/emails/${input.ConversationId}/messages/${input.MessageId}",
+      "requestType": "GET",
+      "headers": {},
+      "requestTemplate": ""
+    },
+    "response": {
+      "translationMap": {
+        "fromEmail": "$.from.email",
+        "time": "$.time",
+        "subject": "$.subject",
+        "body": "$.textBody"
+      },
+      "translationMapDefaults": {
+        "fromEmail": "\"\"",
+        "time": "\"\"",
+        "subject": "\"(no subject)\"",
+        "body": "\"(no text body)\""
+      },
+      "successTemplate": "#set($b = $esc.jsonEncode(${body}))#set($b = $b.replace(\"\\r\", \"\").replace(\"\\n\", \"  \\n\").replace(\"  \\n  \\n\", \"\\n\\n\")){ \"From\": \"$esc.jsonEncode(${fromEmail})\", \"Time\": \"$esc.jsonEncode(${time})\", \"Subject\": \"$esc.jsonEncode(${subject})\", \"Body\": \"$b\" }"
+    }
+  },
+  "contract": {
+    "input": {
+      "inputSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Email Assistant - Get Email Message - input",
+        "type": "object",
+        "properties": {
+          "ConversationId": {
+            "type": "string",
+            "description": "Email conversation (interaction) id"
+          },
+          "MessageId": {
+            "type": "string",
+            "description": "Email message id from the thread list"
+          }
+        },
+        "required": [
+          "ConversationId",
+          "MessageId"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "output": {
+      "successSchema": {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "title": "Email Assistant - Get Email Message - output",
+        "type": "object",
+        "properties": {
+          "From": {
+            "type": "string"
+          },
+          "Time": {
+            "type": "string"
+          },
+          "Subject": {
+            "type": "string"
+          },
+          "Body": {
+            "type": "string",
+            "description": "Full text body"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "secure": false
+}

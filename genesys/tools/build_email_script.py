@@ -21,6 +21,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SCRIPT_OUT = os.path.join(ROOT, "genesys", "scripts", "Email-Assistant.script")
 ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-Search-Inbound-Emails.json")
 FOLLOWUP_ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-List-Follow-Ups.json")
+THREAD_ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-Get-Email-Thread.json")
+MESSAGE_ACTION_OUT = os.path.join(ROOT, "genesys", "data-actions", "Email-Assistant-Get-Email-Message.json")
 
 # Stable identifiers so re-running the generator produces a diff-friendly file.
 NS = uuid.UUID("6f1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
@@ -37,6 +39,10 @@ DATA_ACTION_PLACEHOLDER = "11111111-1111-1111-1111-111111111111"  # replace afte
 DATA_ACTION_NAME = "Email Assistant - Search Inbound Emails"
 FOLLOWUP_ACTION_PLACEHOLDER = "22222222-2222-2222-2222-222222222222"  # replace after creating the follow-ups data action
 FOLLOWUP_ACTION_NAME = "Email Assistant - List Follow-Ups"
+THREAD_ACTION_PLACEHOLDER = "33333333-3333-3333-3333-333333333333"   # replace after creating the thread data action
+THREAD_ACTION_NAME = "Email Assistant - Get Email Thread"
+MESSAGE_ACTION_PLACEHOLDER = "44444444-4444-4444-4444-444444444444"  # replace after creating the message data action
+MESSAGE_ACTION_NAME = "Email Assistant - Get Email Message"
 FONT = 'Arial, "Helvetica Neue", Helvetica, sans-serif'
 
 # --------------------------------------------------------------------------
@@ -355,6 +361,21 @@ V_FU_SELECTED = var("FollowUpSelectedId", description="Flagged email chosen in t
 V_FU_STATUS = var("FollowUpStatus", description="Follow-ups page status text.")
 V_FU_LOADED = var("FollowUpsLoaded", "boolean", False, description="Shows the follow-ups list.")
 
+# Email thread page (messages of a selected conversation, from the conversations API)
+V_THREAD_CONV_ID = var("ThreadConversationId", description="Conversation opened on the Email thread page.")
+V_THREAD_COUNT = var("ThreadCount", "number", 0, description="Number of messages in the thread.")
+V_THREAD_IDS = var("ThreadMessageIds", is_list=True, description="Message IDs of the thread.")
+V_THREAD_LABELS = var("ThreadLabels", is_list=True, description="'time | from | subject' labels of the thread messages.")
+V_THREAD_MD = var("ThreadMarkdown", description="Markdown rendering of the thread (previews).")
+V_THREAD_SELECTED = var("ThreadSelectedMessageId", description="Message chosen in the thread dropdown.")
+V_THREAD_STATUS = var("ThreadStatus", description="Thread page status text.")
+V_THREAD_LOADED = var("ThreadLoaded", "boolean", False, description="Shows the thread list.")
+V_MSG_FROM = var("MessageFrom", description="Sender of the fully loaded message.")
+V_MSG_TIME = var("MessageTime", description="Time of the fully loaded message.")
+V_MSG_SUBJECT = var("MessageSubject", description="Subject of the fully loaded message.")
+V_MSG_BODY = var("MessageBody", description="Full text body of the loaded message.")
+V_MSG_LOADED = var("MessageLoaded", "boolean", False, description="Shows the full message panel.")
+
 # Message details (MIME headers of the customer's email)
 V_HDR_FROM = var("HeaderFrom", description="MIME From header.")
 V_HDR_TO = var("HeaderTo", description="MIME To header.")
@@ -369,6 +390,7 @@ V_HEADERS_LOADED = var("HeadersLoaded", "boolean", False, description="Shows the
 PAGE_HOME = uid("page:home")
 PAGE_REPLIES = uid("page:quick-replies")
 PAGE_FOLLOWUPS = uid("page:follow-ups")
+PAGE_THREAD = uid("page:email-thread")
 
 # --------------------------------------------------------------------------
 # Custom actions
@@ -436,11 +458,48 @@ A_SEARCH_DOMAIN = custom_action("Search - all emails from this domain", [
     set_string(V_SEARCH_ADDRESS, "{{" + V_SENDER_DOMAIN + "}}"),
 ] + search_steps())
 
-A_OPEN_SELECTED = custom_action("Open selected interaction", [
+A_OPEN_SELECTED = custom_action("View selected search result", [
     if_step(V_SELECTED_ID, "equal", "", [
         alert("Select a result in the 'Matching emails' list first."),
     ], [
-        open_url("https://{{" + V_APP_HOST + "}}/directory/#/engage/admin/interactions/{{" + V_SELECTED_ID + "}}"),
+        set_string(V_THREAD_CONV_ID, "{{" + V_SELECTED_ID + "}}"),
+        change_page(PAGE_THREAD),
+    ]),
+])
+
+A_LOAD_THREAD = custom_action("Load email thread", [
+    set_bool(V_THREAD_LOADED, False),
+    set_bool(V_MSG_LOADED, False),
+    set_string(V_THREAD_SELECTED, ""),
+    if_step(V_THREAD_CONV_ID, "equal", "", [
+        set_string(V_THREAD_STATUS, "No email selected. Go back and pick one from a results list."),
+    ], [
+        set_string(V_THREAD_STATUS, "Loading thread {{" + V_THREAD_CONV_ID + "}} ..."),
+        execute_data_action(THREAD_ACTION_PLACEHOLDER,
+                            {"ConversationId": V_THREAD_CONV_ID},
+                            {"Count": V_THREAD_COUNT, "MessageIds": V_THREAD_IDS, "Labels": V_THREAD_LABELS, "Thread": V_THREAD_MD}),
+        set_bool(V_THREAD_LOADED, True),
+        set_string(V_THREAD_STATUS, "{{" + V_THREAD_COUNT + "}} message(s) in this thread. Select one and click 'Show full message' for the complete text."),
+    ]),
+])
+
+A_LOAD_MESSAGE = custom_action("Show full message", [
+    if_step(V_THREAD_SELECTED, "equal", "", [
+        alert("Select a message in the thread list first."),
+    ], [
+        set_bool(V_MSG_LOADED, False),
+        execute_data_action(MESSAGE_ACTION_PLACEHOLDER,
+                            {"ConversationId": V_THREAD_CONV_ID, "MessageId": V_THREAD_SELECTED},
+                            {"From": V_MSG_FROM, "Time": V_MSG_TIME, "Subject": V_MSG_SUBJECT, "Body": V_MSG_BODY}),
+        set_bool(V_MSG_LOADED, True),
+    ]),
+])
+
+A_OPEN_THREAD_IN_GENESYS = custom_action("Open thread in Genesys (new tab)", [
+    if_step(V_THREAD_CONV_ID, "equal", "", [
+        alert("No email selected."),
+    ], [
+        open_url("https://{{" + V_APP_HOST + "}}/directory/#/engage/admin/interactions/{{" + V_THREAD_CONV_ID + "}}"),
     ]),
 ])
 
@@ -468,11 +527,12 @@ A_LOAD_FOLLOWUPS = custom_action("Load follow-ups list", [
     ]),
 ])
 
-A_OPEN_FOLLOWUP = custom_action("Open selected follow-up", [
+A_OPEN_FOLLOWUP = custom_action("View selected follow-up", [
     if_step(V_FU_SELECTED, "equal", "", [
         alert("Select an email in the follow-ups list first."),
     ], [
-        open_url("https://{{" + V_APP_HOST + "}}/directory/#/engage/admin/interactions/{{" + V_FU_SELECTED + "}}"),
+        set_string(V_THREAD_CONV_ID, "{{" + V_FU_SELECTED + "}}"),
+        change_page(PAGE_THREAD),
     ]),
 ])
 
@@ -568,7 +628,7 @@ search = vstack([
             dropdown("Matching emails ({{" + V_RESULT_COUNT + "}})", V_SELECTED_ID,
                      list_pair=(V_RESULT_IDS, V_RESULT_LABELS), placeholder="Select an email to open ...",
                      width=("pixels", 420)),
-            button("Open selected interaction", inline(A_OPEN_SELECTED)),
+            button("\U0001F4E8 View thread", inline(A_OPEN_SELECTED)),
         ]),
         markdown("{{" + V_RESULT_SUMMARY + "}}"),
     ], visible_var=V_HAS_RESULTS, padding=(0, 0, 0, 0)),
@@ -638,10 +698,40 @@ followups_root = vstack([
             dropdown("Flagged emails ({{" + V_FU_COUNT + "}})", V_FU_SELECTED,
                      list_pair=(V_FU_IDS, V_FU_LABELS), placeholder="Select an email to open ...",
                      width=("pixels", 420)),
-            button("Open selected interaction", inline(A_OPEN_FOLLOWUP)),
+            button("\U0001F4E8 View thread", inline(A_OPEN_FOLLOWUP)),
         ]),
         markdown("{{" + V_FU_SUMMARY + "}}"),
     ], visible_var=V_FU_LOADED, padding=(8, 8, 8, 8), border_width=1, border_color="c9c9c9", margin=(8, 0, 0, 0)),
+], height=("stretch", 100), padding=(5, 5, 5, 5))
+
+
+# --------------------------------------------------------------------------
+# Email thread page
+# --------------------------------------------------------------------------
+thread_root = vstack([
+    text("\U0001F4E8 Email thread", bold=True, size=18),
+    text("Interaction {{" + V_THREAD_CONV_ID + "}}", size=10),
+    hstack([
+        button("← Back to email", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_HOME}])),
+        button("← Follow-ups", inline_steps_action("scripter.changePage", [{"typeName": "page", "value": PAGE_FOLLOWUPS}])),
+        button("\U0001F504 Reload", inline(A_LOAD_THREAD)),
+        button("Open in Genesys (new tab)", inline(A_OPEN_THREAD_IN_GENESYS)),
+    ]),
+    text("{{" + V_THREAD_STATUS + "}}", size=11, bold=True),
+    vstack([
+        hstack([
+            dropdown("Messages ({{" + V_THREAD_COUNT + "}})", V_THREAD_SELECTED,
+                     list_pair=(V_THREAD_IDS, V_THREAD_LABELS), placeholder="Select a message ...",
+                     width=("pixels", 460)),
+            button("Show full message", inline(A_LOAD_MESSAGE)),
+        ]),
+        vstack([
+            text("From: {{" + V_MSG_FROM + "}}   |   {{" + V_MSG_TIME + "}}", size=11, bold=True),
+            text("Subject: {{" + V_MSG_SUBJECT + "}}", size=11),
+            markdown("{{" + V_MSG_BODY + "}}"),
+        ], visible_var=V_MSG_LOADED, padding=(8, 8, 8, 8), border_width=1, border_color="8fb3ff", margin=(4, 0, 8, 0)),
+        markdown("{{" + V_THREAD_MD + "}}"),
+    ], visible_var=V_THREAD_LOADED, padding=(8, 8, 8, 8), border_width=1, border_color="c9c9c9", margin=(8, 0, 0, 0)),
 ], height=("stretch", 100), padding=(5, 5, 5, 5))
 
 
@@ -694,6 +784,7 @@ SCRIPT = OrderedDict([
         page(PAGE_HOME, "Email", home_root, on_load=A_ON_LOAD),
         page(PAGE_REPLIES, "Quick replies", replies_root),
         page(PAGE_FOLLOWUPS, "Follow-ups", followups_root, on_load=A_LOAD_FOLLOWUPS),
+        page(PAGE_THREAD, "Email thread", thread_root, on_load=A_LOAD_THREAD),
     ]),
     ("features", FEATURES),
     ("variables", VARS),
@@ -820,6 +911,131 @@ def data_action(name, request_template, input_props, required):
     ])
 
 
+# Thread listing: GET messages of a conversation. The translation map projects each message to
+# id / from / subject / textBodyPreview / time; the template reduces each to one record and renders
+# a dropdown list plus a markdown thread (previews). Same #set/#if-only, no-$input rules apply.
+THREAD_SUCCESS_TEMPLATE = (
+    '#set($src = "${msgs}")'
+    '#set($rows = "")'
+    '#if($src.contains(\'"id"\'))'
+    '#set($rows = $src.replaceFirst(\'(?s)^.*?(?="id")\', ""))'
+    # one record per message: id ~|~ time ~|~ from ~|~ subject ~|~ preview <<>>  (fields found in any order)
+    '#set($rows = $rows.replaceAll(\'(?s)"id"\\s*:\\s*"([^"]+)"(?:(?=(?:(?!"id").)*?"time"\\s*:\\s*"([^"]*)")|)(?:(?=(?:(?!"id").)*?"from"\\s*:\\s*\\{[^}]*?"email"\\s*:\\s*"([^"]*)")|)(?:(?=(?:(?!"id").)*?"subject"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)")|)(?:(?=(?:(?!"id").)*?"textBodyPreview"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)")|)(?:(?!"id").)*\', \'$1~|~$2~|~$3~|~$4~|~$5<<>>\'))'
+    '#end'
+    '#set($n = $rows.length() - $rows.replace("<<>>", "").length())'
+    '#set($n = $n / 4)'
+    '#set($ids = $rows.replaceAll(\'((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)<<>>\', \'"$1",\'))'
+    '#set($lbl = $rows.replaceAll(\'((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)<<>>\', \'"$2  |  $3  |  $4",\'))'
+    '#set($md = $rows.replaceAll(\'((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)~\|~((?:(?!~\|~)(?!<<>>).)*)<<>>\', \'#### $2 - $3\\\\n**$4**\\\\n\\\\n$5\\\\n\\\\n---\\\\n\'))'
+    # tidy ISO timestamps to 'YYYY-MM-DD HH:MM' and turn escaped newlines in previews into markdown hard breaks
+    '#set($lbl = $lbl.replaceAll(\'(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^ "]*\', \'$1 $2\'))'
+    '#set($md = $md.replaceAll(\'(\\d{4}-\\d{2}-\\d{2})T(\\d{2}:\\d{2})[^ "]*\', \'$1 $2\'))'
+    '#set($md = $md.replace("\\r", "").replace("\\n", "  \\n").replace("  \\n  \\n", "\\n\\n").replace("****", "_(no subject)_"))'
+    '#set($ids = $ids.replaceAll(",$", ""))'
+    '#set($lbl = $lbl.replaceAll(",$", ""))'
+    '{ "Count": $n,'
+    ' "MessageIds": [$ids],'
+    ' "Labels": [$lbl],'
+    ' "Thread": "#if($n == 0)No messages found for this conversation.#else$md#end"'
+    ' }'
+)
+
+THREAD_ACTION = OrderedDict([
+    ("name", THREAD_ACTION_NAME),
+    ("integrationType", "purecloud-data-actions"),
+    ("actionType", "custom"),
+    ("config", OrderedDict([
+        ("request", OrderedDict([
+            ("requestUrlTemplate", "/api/v2/conversations/emails/${input.ConversationId}/messages"),
+            ("requestType", "GET"),
+            ("headers", {}),
+            ("requestTemplate", ""),
+        ])),
+        ("response", OrderedDict([
+            ("translationMap", OrderedDict([("msgs", "$.entities[*]['id','time','from','subject','textBodyPreview']")])),
+            ("translationMapDefaults", OrderedDict([("msgs", "[]")])),
+            ("successTemplate", THREAD_SUCCESS_TEMPLATE),
+        ])),
+    ])),
+    ("contract", OrderedDict([
+        ("input", {"inputSchema": OrderedDict([
+            ("$schema", "http://json-schema.org/draft-04/schema#"),
+            ("title", THREAD_ACTION_NAME + " - input"),
+            ("type", "object"),
+            ("properties", OrderedDict([("ConversationId", {"type": "string", "description": "Email conversation (interaction) id"})])),
+            ("required", ["ConversationId"]),
+            ("additionalProperties", True),
+        ])}),
+        ("output", {"successSchema": OrderedDict([
+            ("$schema", "http://json-schema.org/draft-04/schema#"),
+            ("title", THREAD_ACTION_NAME + " - output"),
+            ("type", "object"),
+            ("properties", OrderedDict([
+                ("Count", {"type": "integer"}),
+                ("MessageIds", {"type": "array", "items": {"type": "string"}}),
+                ("Labels", {"type": "array", "items": {"type": "string"}, "description": "time | from | subject"}),
+                ("Thread", {"type": "string", "description": "Markdown: one section per message with its text preview"}),
+            ])),
+            ("additionalProperties", True),
+        ])}),
+    ])),
+    ("secure", False),
+])
+
+# Single message: GET one message with its full text body.
+MESSAGE_ACTION = OrderedDict([
+    ("name", MESSAGE_ACTION_NAME),
+    ("integrationType", "purecloud-data-actions"),
+    ("actionType", "custom"),
+    ("config", OrderedDict([
+        ("request", OrderedDict([
+            ("requestUrlTemplate", "/api/v2/conversations/emails/${input.ConversationId}/messages/${input.MessageId}"),
+            ("requestType", "GET"),
+            ("headers", {}),
+            ("requestTemplate", ""),
+        ])),
+        ("response", OrderedDict([
+            ("translationMap", OrderedDict([
+                ("fromEmail", "$.from.email"),
+                ("time", "$.time"),
+                ("subject", "$.subject"),
+                ("body", "$.textBody"),
+            ])),
+            ("translationMapDefaults", OrderedDict([
+                ("fromEmail", "\"\""), ("time", "\"\""), ("subject", "\"(no subject)\""), ("body", "\"(no text body)\""),
+            ])),
+            ("successTemplate",
+             '#set($b = $esc.jsonEncode(${body}))'
+             '#set($b = $b.replace("\\r", "").replace("\\n", "  \\n").replace("  \\n  \\n", "\\n\\n"))'
+             '{ "From": "$esc.jsonEncode(${fromEmail})", "Time": "$esc.jsonEncode(${time})", "Subject": "$esc.jsonEncode(${subject})", "Body": "$b" }'),
+        ])),
+    ])),
+    ("contract", OrderedDict([
+        ("input", {"inputSchema": OrderedDict([
+            ("$schema", "http://json-schema.org/draft-04/schema#"),
+            ("title", MESSAGE_ACTION_NAME + " - input"),
+            ("type", "object"),
+            ("properties", OrderedDict([
+                ("ConversationId", {"type": "string", "description": "Email conversation (interaction) id"}),
+                ("MessageId", {"type": "string", "description": "Email message id from the thread list"}),
+            ])),
+            ("required", ["ConversationId", "MessageId"]),
+            ("additionalProperties", True),
+        ])}),
+        ("output", {"successSchema": OrderedDict([
+            ("$schema", "http://json-schema.org/draft-04/schema#"),
+            ("title", MESSAGE_ACTION_NAME + " - output"),
+            ("type", "object"),
+            ("properties", OrderedDict([
+                ("From", {"type": "string"}), ("Time", {"type": "string"}), ("Subject", {"type": "string"}),
+                ("Body", {"type": "string", "description": "Full text body"}),
+            ])),
+            ("additionalProperties", True),
+        ])}),
+    ])),
+    ("secure", False),
+])
+
 DATA_ACTION = data_action(DATA_ACTION_NAME, REQUEST_TEMPLATE, OrderedDict([
     ("Mode", {"type": "string", "description": "Exactly one of: sender | domain | all"}),
     ("Address", {"type": "string", "description": "Email address (Mode=sender) or domain without @ (Mode=domain)"}),
@@ -845,10 +1061,18 @@ def main():
     with open(FOLLOWUP_ACTION_OUT, "w", encoding="utf-8") as f:
         json.dump(FOLLOWUP_ACTION, f, indent=2, ensure_ascii=False)
         f.write("\n")
+    with open(THREAD_ACTION_OUT, "w", encoding="utf-8") as f:
+        json.dump(THREAD_ACTION, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    with open(MESSAGE_ACTION_OUT, "w", encoding="utf-8") as f:
+        json.dump(MESSAGE_ACTION, f, indent=2, ensure_ascii=False)
+        f.write("\n")
     print("wrote", os.path.relpath(SCRIPT_OUT, ROOT))
     print("wrote", os.path.relpath(ACTION_OUT, ROOT))
     print("wrote", os.path.relpath(FOLLOWUP_ACTION_OUT, ROOT))
     print("follow-ups data action placeholder id:", FOLLOWUP_ACTION_PLACEHOLDER)
+    print("wrote", os.path.relpath(THREAD_ACTION_OUT, ROOT), "placeholder", THREAD_ACTION_PLACEHOLDER)
+    print("wrote", os.path.relpath(MESSAGE_ACTION_OUT, ROOT), "placeholder", MESSAGE_ACTION_PLACEHOLDER)
     print("data action placeholder id:", DATA_ACTION_PLACEHOLDER)
 
 
